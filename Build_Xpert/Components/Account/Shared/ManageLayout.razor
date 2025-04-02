@@ -1,0 +1,37 @@
+﻿@page "/manage-account"
+@inherits LayoutComponentBase
+@layout Build_Xpert.Components.Layout.MainLayout
+@using Microsoft.AspNetCore.Components.Authorization
+@inject AuthenticationStateProvider AuthenticationStateProvider
+
+<div>
+    <h1>Welcome, <strong>@UserName</strong>!</h1>
+    <hr />
+    <div class="row">
+        <div class="col-lg-3">
+            <ManageNavMenu />
+        </div>
+        <div class="col-lg-9">
+            
+            @Body
+        </div>
+    </div>
+</div>
+
+@code {
+    private string UserName { get; set; } = "Guest";
+
+    protected override async Task OnInitializedAsync()
+    {
+
+        var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
+        var user = authState.User;
+
+        if (user.Identity.IsAuthenticated)
+        {
+            UserName = user.Identity.Name;
+        }
+    }
+
+
+}

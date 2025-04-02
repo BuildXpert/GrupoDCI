@@ -1,0 +1,171 @@
+﻿@page "/admin/users"
+@attribute [Microsoft.AspNetCore.Authorization.Authorize(Roles = "Admin")]
+@using Build_Xpert.Model
+@using Build_Xpert.Services
+@inject UserService UserService
+@inject NavigationManager NavigationManager
+
+<div class="container mt-4">
+    <div class="row justify-content-center">
+        <div class="col-md-12">
+            <div class="card shadow-lg p-4">
+                <div class="card-body">
+                    <h3 class="card-title text-primary text-center">Administración de Usuarios</h3>
+                    <p class="text-muted text-center">Administra los usuarios y sus roles en la plataforma.</p>
+
+                    <div class="d-flex flex-wrap mb-3">
+                        <input type="text" @bind="searchTerm" class="form-control me-2 w-50" placeholder="Buscar por Nombre o Correo...">
+                        <button @onclick="SearchUsers" class="btn btn-outline-primary">Buscar</button>
+                        <button @onclick="ResetSearch" class="btn btn-outline-secondary ms-2">Restablecer</button>
+                    </div>
+
+                    <div>
+                        <button class="btn btn-success mb-3" @onclick="NavigateToAddUser">
+                            ➕ Agregar Usuario
+                        </button>
+                        <hr>
+                    </div>
+
+                    @if (filteredUsers == null || userRoles == null || availableRoles == null)
+                    {
+                        <div class="text-center mt-4">
+                            <div class="spinner-border text-primary" role="status">
+                                <span class="visually-hidden">Cargando...</span>
+                            </div>
+                            <p class="mt-2">Cargando usuarios...</p>
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="table-responsive overflow-auto">
+                            <table class="table table-bordered table-hover text-center">
+                                <thead class="table-dark">
+                                    <tr>
+                                        <th>Correo Electrónico</th>
+                                        <th>Nombre</th>
+                                        <th>Identificación</th>
+                                        <th>Teléfono</th>
+                                        <th>Rol</th>
+                                        <th>Acciones</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach (var user in filteredUsers)
+                                    {
+                                        <tr>
+                                            <td>@user.Email</td>
+                                            <td>@user.UserName</td>
+                                            <td>@(user.Id ?? "N/A")</td>
+                                            <td>@(user.PhoneNumber ?? "No registrado")</td>
+                                            <td>
+                                                <select class="form-select text-center" value="@userRoles[user.Id]" @onchange="(e) => OnRoleChange(e, user.Id)">
+                                                    @foreach (var role in availableRoles)
+                                                    {
+                                                        <option value="@role" selected="@(userRoles[user.Id] == role ? "selected" : null)">@role</option>
+                                                    }
+                                                </select>
+                                            </td>
+                                            <td>
+                                                <button @onclick="() => EditUser(user.Id)" class="btn btn-outline-warning">✏ Editar</button>
+                                                <button @onclick="() => DeleteUser(user.Id)" class="btn btn-outline-danger">🗑 Eliminar</button>
+                                            </td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@code {
+    private List<ApplicationUser>? users;
+    private List<ApplicationUser>? filteredUsers;
+    private Dictionary<string, string> userRoles = new();
+    private List<string>? availableRoles;
+    private string searchTerm = "";
+
+    protected override async Task OnInitializedAsync()
+    {
+        users = await UserService.GetUsersAsync();
+        availableRoles = await UserService.GetRolesAsync();
+        await LoadUserRoles();
+        filteredUsers = users;
+    }
+
+    private async Task LoadUserRoles()
+    {
+        userRoles.Clear();
+        foreach (var user in users)
+        {
+            var roles = await UserService.GetUserRolesAsync(user.Id);
+            userRoles[user.Id] = roles.FirstOrDefault() ?? "Cliente";
+        }
+    }
+
+    private void SearchUsers()
+    {
+        if (string.IsNullOrWhiteSpace(searchTerm))
+        {
+            filteredUsers = users;
+        }
+        else
+        {
+            filteredUsers = users.Where(u =>
+                u.UserName.Contains(searchTerm, StringComparison.OrdinalIgnoreCase) ||
+                u.Email.Contains(searchTerm, StringComparison.OrdinalIgnoreCase)
+            ).ToList();
+        }
+    }
+
+    private void ResetSearch()
+    {
+        searchTerm = "";
+        filteredUsers = users;
+    }
+
+    private async Task OnRoleChange(ChangeEventArgs e, string userId)
+    {
+        string newRole = e.Value?.ToString();
+        if (newRole == null) return;
+
+        var result = await UserService.ChangeUserRoleAsync(userId, newRole);
+        if (result.Succeeded)
+        {
+            Console.WriteLine($"Rol cambiado correctamente para el usuario {userId} a {newRole}");
+            await LoadUserRoles();
+        }
+        else
+        {
+            Console.WriteLine("Error al cambiar el rol.");
+        }
+    }
+
+    private async Task DeleteUser(string userId)
+    {
+        var result = await UserService.DeleteUserAsync(userId);
+        if (result.Succeeded)
+        {
+            users = await UserService.GetUsersAsync();
+            filteredUsers = users;
+            await LoadUserRoles();
+        }
+        else
+        {
+            Console.WriteLine("Error al eliminar el usuario.");
+        }
+    }
+
+    private void EditUser(string userId)
+    {
+        NavigationManager.NavigateTo($"/edit-user/{userId}");
+    }
+
+    private void NavigateToAddUser()
+    {
+        NavigationManager.NavigateTo("/add-user");
+    }
+}

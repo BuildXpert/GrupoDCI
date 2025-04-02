@@ -1,0 +1,141 @@
+﻿@page "/proveedores"
+@using Build_Xpert.Model
+@using Build_Xpert.Services
+@inject ProveedorService ProveedorService
+@inject NavigationManager Navigation
+
+<!-- Estilos -->
+<style>
+    .proveedor-card {
+        border: none;
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        border-radius: 10px;
+        overflow: hidden;
+        transition: transform 0.2s ease-in-out;
+    }
+
+        .proveedor-card:hover {
+            transform: scale(1.03);
+        }
+
+    .modal-backdrop {
+        background: rgba(0, 0, 0, 0.5);
+    }
+</style>
+
+<!-- Contenedor principal -->
+<div class="container mt-5">
+    <h1 class="mb-4">📋 Lista de Proveedores</h1>
+
+    <!-- Botón para abrir el modal -->
+    <button class="btn btn-success mb-3" @onclick="OpenAddProveedorModal">Agregar Proveedor</button>
+
+    @if (proveedores == null)
+    {
+        <div class="text-center">
+            <div class="spinner-border text-primary" role="status">
+                <span class="visually-hidden">Cargando...</span>
+            </div>
+            <p class="mt-2">Cargando proveedores...</p>
+        </div>
+    }
+    else if (proveedores.Count == 0)
+    {
+        <div class="alert alert-warning text-center">No hay proveedores registrados.</div>
+    }
+    else
+    {
+        <div class="row">
+            @foreach (var proveedor in proveedores)
+            {
+                <div class="col-md-4 mb-4">
+                    <div class="card proveedor-card">
+                        <div class="card-body">
+                            <h5 class="card-title">@proveedor.Nombre</h5>
+                            <p><strong>📞 Contacto:</strong> @proveedor.Contacto</p>
+                            <p><strong>🏗 Servicio:</strong> @proveedor.TipoServicio</p>
+                            <p><strong>📍 Dirección:</strong> @proveedor.Direccion</p>
+                            <p><strong>Estado:</strong> <span class="badge @(proveedor.Estado == "Activo" ? "bg-success" : "bg-secondary")">@proveedor.Estado</span></p>
+                            <button class="btn btn-outline-primary w-100 mt-2" @onclick="() => ViewProveedorDetails(proveedor.Id)">Ver Detalles</button>
+                        </div>
+                    </div>
+                </div>
+            }
+        </div>
+    }
+</div>
+
+<!-- MODAL para agregar proveedor -->
+@if (showAddProveedorModal)
+{
+    <div class="modal fade show d-block" tabindex="-1" role="dialog">
+        <div class="modal-dialog modal-lg" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Agregar Nuevo Proveedor</h5>
+                    <button type="button" class="btn-close" @onclick="CloseAddProveedorModal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label for="nombre" class="form-label">Nombre del Proveedor</label>
+                        <input type="text" class="form-control" id="nombre" placeholder="Ingrese el nombre" @bind="newProveedor.Nombre">
+                    </div>
+                    <div class="mb-3">
+                        <label for="tipoServicio" class="form-label">Tipo de Servicio</label>
+                        <input type="text" class="form-control" id="tipoServicio" placeholder="Ejemplo: Maquinaria, Transporte, Servicios" @bind="newProveedor.TipoServicio">
+                    </div>
+                    <div class="mb-3">
+                        <label for="contacto" class="form-label">Contacto</label>
+                        <input type="text" class="form-control" id="contacto" placeholder="Teléfono o Email" @bind="newProveedor.Contacto">
+                    </div>
+                    <div class="mb-3">
+                        <label for="direccion" class="form-label">Dirección</label>
+                        <input type="text" class="form-control" id="direccion" placeholder="Ingrese la dirección" @bind="newProveedor.Direccion">
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button class="btn btn-secondary" @onclick="CloseAddProveedorModal">Cancelar</button>
+                    <button class="btn btn-primary" @onclick="AddProveedor">Guardar</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="modal-backdrop fade show"></div>
+}
+
+@code {
+    private List<Proveedor> proveedores = new();
+    private bool showAddProveedorModal = false;
+    private Proveedor newProveedor = new Proveedor();
+
+    protected override async Task OnInitializedAsync() => proveedores = await ProveedorService.GetProveedoresAsync();
+
+    private void ViewProveedorDetails(int proveedorId)
+    {
+        Navigation.NavigateTo($"/proveedor-details/{proveedorId}");
+    }
+
+    private void OpenAddProveedorModal()
+    {
+        showAddProveedorModal = true;
+        newProveedor = new Proveedor(); // Reseteamos el modelo
+    }
+
+    private void CloseAddProveedorModal()
+    {
+        showAddProveedorModal = false;
+    }
+
+    private async Task AddProveedor()
+    {
+        if (!string.IsNullOrWhiteSpace(newProveedor.Nombre) &&
+            !string.IsNullOrWhiteSpace(newProveedor.TipoServicio) &&
+            !string.IsNullOrWhiteSpace(newProveedor.Contacto) &&
+            !string.IsNullOrWhiteSpace(newProveedor.Direccion))
+        {
+            await ProveedorService.AddProveedorAsync(newProveedor);
+            proveedores = await ProveedorService.GetProveedoresAsync();
+            CloseAddProveedorModal();
+        }
+    }
+}

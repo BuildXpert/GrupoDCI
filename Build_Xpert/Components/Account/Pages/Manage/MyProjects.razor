@@ -1,0 +1,66 @@
+﻿@page "/Account/Manage/MyProjects"
+@using Microsoft.AspNetCore.Identity
+@using Build_Xpert.Model
+@using Build_Xpert.Services
+@inject ProjectService ProjectService
+@inject UserManager<ApplicationUser> UserManager
+@inject AuthenticationStateProvider AuthenticationStateProvider
+@inject NavigationManager Navigation
+
+<h3>Mis Proyectos</h3>
+
+@if (Projects == null)
+{
+    <p>Cargando...</p>
+}
+else if (Projects.Any())
+{
+    <div class="container">
+        <div class="row">
+            @foreach (var project in Projects)
+            {
+                <div class="col-md-4 mb-3">
+                    <div class="card shadow-sm">
+                        <img src="https://cf.bstatic.com/xdata/images/hotel/max1024x768/299518200.jpg?k=ba3ad80a26702fed89d7143ff7bc9d294df0174d64d75e8d78f8b50851519a27&o=&hp=1" class="card-img-top" alt="Imagen de proyecto">
+                        <div class="card-body">
+                            <h5 class="card-title">@project.Name</h5>
+                            <p class="card-text">@project.Description</p>
+                            <p><strong>Estado:</strong> @project.Status</p>
+                            <button class="btn btn-primary me-2" @onclick="() => ViewDetails(project.Id)">Ver Detalles</button>
+                        </div>
+                    </div>
+                </div>
+            }
+        </div>
+    </div>
+}
+else
+{
+    <p>No tienes proyectos asignados.</p>
+}
+
+@code {
+    private List<Project> Projects = new();
+    private ApplicationUser? CurrentUser;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
+        var user = authState.User;
+
+        if (user.Identity != null && user.Identity.IsAuthenticated)
+        {
+            CurrentUser = await UserManager.GetUserAsync(user);
+            if (CurrentUser != null)
+            {
+                Projects = await ProjectService.GetProjectsAsync();
+                Projects = Projects.Where(p => p.ClientId == CurrentUser.Id || p.AdminId == CurrentUser.Id).ToList();
+            }
+        }
+    }
+
+    private void ViewDetails(int id)
+    {
+        Navigation.NavigateTo($"/project-details/{id}");
+    }
+}

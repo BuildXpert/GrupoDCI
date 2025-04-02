@@ -1,0 +1,70 @@
+﻿@page "/edit-task/{id:int}"
+@using Build_Xpert.Model
+@using Build_Xpert.Services
+@inject ProjectService ProjectService
+@inject NavigationManager Navigation
+
+<div class="container mt-4">
+    <div class="row justify-content-center">
+        <div class="col-md-6">
+            <div class="card shadow-lg p-4">
+                <div class="card-body">
+                    <h3 class="card-title text-primary text-center">Editar Tarea</h3>
+
+                    @if (task == null)
+                    {
+                        <div class="text-center mt-4">
+                            <div class="spinner-border text-primary" role="status">
+                                <span class="visually-hidden">Cargando...</span>
+                            </div>
+                            <p class="mt-2">Cargando datos de la tarea...</p>
+                        </div>
+                    }
+                    else
+                    {
+                        <EditForm Model="task" OnValidSubmit="SaveChanges">
+                            <DataAnnotationsValidator />
+                            <ValidationSummary class="text-danger" />
+
+                            <div class="form-floating mb-3">
+                                <InputText @bind-Value="task.Title" class="form-control" placeholder="Título de la tarea" />
+                                <label>Título de la Tarea</label>
+                            </div>
+
+                            <div class="form-check mb-3">
+                                <InputCheckbox @bind-Value="task.IsCompleted" class="form-check-input" />
+                                <label class="form-check-label ms-2">Completado</label>
+                            </div>
+
+                            <div class="d-flex justify-content-center gap-3 mt-3">
+                                <button type="submit" class="btn btn-success px-4">Guardar Cambios</button>
+                                <button type="button" class="btn btn-outline-danger px-4" @onclick="GoBack">Cancelar</button>
+                            </div>
+                        </EditForm>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@code {
+    [Parameter] public int Id { get; set; }
+    private ProjectTask task;
+
+    protected override async Task OnInitializedAsync()
+    {
+        task = await ProjectService.GetTaskByIdAsync(Id);
+    }
+
+    private async Task SaveChanges()
+    {
+        await ProjectService.UpdateTaskAsync(task);
+        Navigation.NavigateTo($"/project-details/{task.ProjectId}");
+    }
+
+    private void GoBack()
+    {
+        Navigation.NavigateTo($"/project-details/{task.ProjectId}");
+    }
+}

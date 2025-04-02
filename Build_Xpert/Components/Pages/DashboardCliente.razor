@@ -1,0 +1,70 @@
+﻿@page "/dashboard-cliente"
+@attribute [Microsoft.AspNetCore.Authorization.Authorize(Roles = "Cliente")]
+@using Build_Xpert.Model
+@using Build_Xpert.Services
+@using Microsoft.AspNetCore.Identity
+@using Microsoft.EntityFrameworkCore.Metadata.Internal
+
+@inject ProjectService ProjectService
+@inject AuthenticationStateProvider AuthenticationStateProvider
+@inject NavigationManager Navigation
+@inject UserManager<ApplicationUser> UserManager
+
+<PageTitle>Dashboard Cliente</PageTitle>
+
+<h2 class="text-center">Bienvenido Cliente</h2>
+
+@if (Projects == null)
+{
+    <p>Cargando...</p>
+}
+else if (!Projects.Any())
+{
+    <p>No tienes proyectos asignados.</p>
+}
+else
+{
+    <div class="container">
+        <div class="row">
+            @foreach (var project in Projects)
+            {
+                <div class="col-md-4 mb-3">
+                    <div class="card shadow-sm">
+                        <div class="card-body">
+                            <h5 class="card-title">@project.Name</h5>
+                            <p class="card-text">@project.Description</p>
+                            <p><strong>Estado:</strong> @project.Status</p>
+                            <button class="btn btn-primary" @onclick="() => ViewProject(project.Id)">Ver Proyecto</button>
+                        </div>
+                    </div>
+                </div>
+            }
+        </div>
+    </div>
+}
+
+@code {
+    private List<Project> Projects = new();
+    private ApplicationUser? CurrentUser;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
+        var user = authState.User;
+
+        if (user.Identity?.IsAuthenticated == true)
+        {
+            CurrentUser = await UserManager.GetUserAsync(user);
+            if (CurrentUser != null)
+            {
+                Projects = await ProjectService.GetProjectsAsync();
+                Projects = Projects.Where(p => p.ClientId == CurrentUser.Id).ToList();
+            }
+        }
+    }
+    
+    private void ViewProject(int id)
+    {
+        Navigation.NavigateTo($"/project-details/{id}");
+    }
+}

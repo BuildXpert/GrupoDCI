@@ -1,0 +1,29 @@
+﻿@page "/dashboard-admin"
+@attribute [Microsoft.AspNetCore.Authorization.Authorize(Roles = "Cliente")]
+<PageTitle>Dashboard Administrador</PageTitle>
+
+<h2 class="text-center">Bienvenido Administrador</h2>
+
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-body">
+                    <h4>Gestión de Usuarios</h4>
+                    <p>Administra clientes y empleados.</p>
+                    <button class="btn btn-primary">Ver Usuarios</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-body">
+                    <h4>Proyectos</h4>
+                    <p>Gestiona todos los proyectos en la plataforma.</p>
+                    <button class="btn btn-secondary">Ver Proyectos</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

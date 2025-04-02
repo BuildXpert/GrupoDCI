@@ -1,0 +1,532 @@
+﻿@page "/project-details/{id:int}"
+@using Microsoft.AspNetCore.Identity
+@using Build_Xpert.Model
+@using Build_Xpert.Services
+@inject ProjectService ProjectService
+@inject UserService UserService
+@inject UserManager<ApplicationUser> UserManager
+@inject AuthenticationStateProvider AuthenticationStateProvider
+@inject NavigationManager Navigation
+
+<!-- Estilos personalizados -->
+<style>
+    .profile-header {
+        position: relative;
+        width: 100%;
+        height: 300px;
+        background: url("https://images.pexels.com/photos/106399/pexels-photo-106399.jpeg") center center / cover no-repeat;
+    }
+
+        .profile-header::after {
+            content: "";
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            height: 40%;
+            background: linear-gradient(to bottom, rgba(255, 255, 255, 0) 0%, white 100%);
+        }
+
+    .btn-fixed-size {
+        width: 140px;
+        text-align: center;
+    }
+
+    .btn-sm-fixed-size {
+        width: 100px;
+        text-align: center;
+    }
+
+    .carousel-item img {
+        height: 400px;
+        object-fit: cover;
+        border-radius: 8px;
+    }
+
+    .ficha-tecnica {
+        background-color: #f8f9fa;
+        border-radius: 8px;
+        padding: 20px;
+        height: 100%;
+    }
+
+    .media-placeholder {
+        height: 150px;
+        overflow: hidden;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .media-content {
+        max-width: 100%;
+        max-height: 100%;
+        object-fit: cover;
+    }
+</style>
+
+<!-- Encabezado de la página -->
+<div class="profile-header"></div>
+
+<!-- Contenedor principal -->
+<div class="container mt-4">
+    <div class="project-container">
+        @if (project == null || client == null || admin == null)
+        {
+            <!-- Estado de carga -->
+            <div class="text-center mt-4">
+                <div class="spinner-border text-primary" role="status">
+                    <span class="visually-hidden">Cargando...</span>
+                </div>
+                <p class="mt-2">Cargando datos del proyecto...</p>
+            </div>
+        }
+        else
+        {
+            <!-- Tarjeta de información del proyecto -->
+            <div class="card shadow-lg p-4 mt-3">
+                <div class="card-body">
+                    <h3 class="card-title">@project.Name</h3>
+                    <p class="card-text">@project.Description</p>
+                    <p><strong>Estado:</strong> <span class="badge bg-info">@project.Status</span></p>
+                    <p><strong>Cliente:</strong> @client.UserName (<a href="mailto:@client.Email">@client.Email</a>)</p>
+                    <p><strong>Administrador:</strong> @admin.UserName (<a href="mailto:@admin.Email">@admin.Email</a>)</p>
+
+                    <!-- Barra de progreso -->
+                    <div class="progress mt-4">
+                        <div class="progress-bar progress-bar-striped progress-bar-animated bg-success"
+                             role="progressbar"
+                             style="width: @ProgressPercentage%;"
+                             aria-valuenow="@ProgressPercentage"
+                             aria-valuemin="0" aria-valuemax="100">
+                            @ProgressPercentage%
+                        </div>
+                    </div>
+
+                    <!-- Botones de acción -->
+                    <div class="mt-4 d-flex align-items-center">
+                        @if (isAdmin)
+                        {
+                            <button class="btn btn-outline-primary btn-fixed-size" @onclick="EditProject">
+                                Editar Proyecto
+                            </button>
+                        }
+                        <button class="btn btn-outline-secondary btn-fixed-size ms-2" @onclick="GoBack">
+                            Volver
+                        </button>
+                        <a href="/Inventario/@project.Id" class="btn btn-primary ms-2">Ver Inventario</a>
+                    </div>
+
+                </div>
+            </div>
+
+            <!-- Sección combinada: Carrusel y Ficha Técnica -->
+            <h4 class="mt-5">Detalles de la Casa</h4>
+            <div class="card shadow-lg p-4 mt-3">
+                <div class="row">
+                    <!-- Carrusel de imágenes -->
+                    <div class="col-md-6">
+                        <div id="houseSectionsCarousel" class="carousel slide" data-bs-ride="carousel">
+                            <div class="carousel-indicators">
+                                @for (int i = 0; i < houseImages.Count; i++)
+                                {
+                                    <button type="button" data-bs-target="#houseSectionsCarousel" data-bs-slide-to="@i" class="@(i == 0 ? "active" : "")" aria-label="Slide @(i + 1)"></button>
+                                }
+                            </div>
+
+                            <div class="carousel-inner">
+                                @for (int i = 0; i < houseImages.Count; i++)
+                                {
+                                    <div class="carousel-item @(i == 0 ? "active" : "")">
+                                        <img src="@houseImages[i]" class="d-block w-100" alt="Sección de la casa @(i + 1)">
+                                    </div>
+                                }
+                            </div>
+
+                            <button class="carousel-control-prev" type="button" data-bs-target="#houseSectionsCarousel" data-bs-slide="prev">
+                                <span class="carousel-control-prev-icon" aria-hidden="true"></span>
+                                <span class="visually-hidden">Anterior</span>
+                            </button>
+                            <button class="carousel-control-next" type="button" data-bs-target="#houseSectionsCarousel" data-bs-slide="next">
+                                <span class="carousel-control-next-icon" aria-hidden="true"></span>
+                                <span class="visually-hidden">Siguiente</span>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Ficha Técnica -->
+                    <div class="col-md-6">
+                        <div class="ficha-tecnica h-100">
+                            <h5>Ficha Técnica</h5>
+                            <table class="table table-striped">
+                                <tbody>
+                                    <tr>
+                                        <td><strong>🏠 Tipo de Construcción:</strong></td>
+                                        <td>@project.ConstructionType</td>
+                                    </tr>
+                                    <tr>
+                                        <td><strong>📍 Ubicación:</strong></td>
+                                        <td>@($"{project.Province}, {project.Canton}")</td>
+                                    </tr>
+                                    <tr>
+                                        <td><strong>📏 Área Total:</strong></td>
+                                        <td>@(project.LandSize + project.ConstructionSize) m²</td>
+                                    </tr>
+                                    <tr>
+                                        <td><strong>🛏 Habitaciones:</strong></td>
+                                        <td>@project.Bedrooms</td>
+                                    </tr>
+                                    <tr>
+                                        <td><strong>🚿 Baños:</strong></td>
+                                        <td>@project.Bathrooms</td>
+                                    </tr>
+                                    <tr>
+                                        <td><strong>🚗 Garaje:</strong></td>
+                                        <td>@(project.HasGarage ? $"Sí, capacidad para {project.GarageCapacity} vehículos" : "No")</td>
+                                    </tr>
+                                    <tr>
+                                        <td><strong>🏢 Plantas:</strong></td>
+                                        <td>@project.Floors</td>
+                                    </tr>
+                                    <tr>
+                                        <td><strong>💰 Precio:</strong></td>
+                                        <td>@($"{project.Price:C}")</td>
+                                    </tr>
+                                    <tr>
+                                        <td><strong>🏡 ¿En condominio?</strong></td>
+                                        <td>@(project.IsCondominium ? "Sí" : "No")</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Tareas Asociadas -->
+            <h4 class="mt-5">Tareas Asociadas</h4>
+
+            @if (isAdmin)
+            {
+                <div class="mb-3">
+                    <button class="btn btn-success btn-fixed-size mt-2" @onclick="OpenAddTaskModal">Agregar Tarea</button>
+                </div>
+            }
+
+            @if (project.Tasks == null || project.Tasks.Count == 0)
+            {
+                <p class="text-muted">No hay tareas asignadas.</p>
+            }
+            else
+            {
+                <div class="table-responsive mt-3">
+                    <table class="table table-bordered table-hover">
+                        <thead class="table-dark">
+                            <tr>
+                                <th>#</th>
+                                <th>Nombre de la Tarea</th>
+                                <th>Estado</th>
+                                @if (isAdmin)
+                                {
+                                    <th class="text-center">Acciones</th>
+                                }
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var task in project.Tasks.Select((t, index) => new { Task = t, Index = index + 1 }))
+                            {
+                                <tr>
+                                    <td>@task.Index</td>
+                                    <td>@task.Task.Title</td>
+                                    <td>
+                                        <span class="badge @(task.Task.IsCompleted ? "bg-success" : "bg-warning text-dark")">
+                                            @(task.Task.IsCompleted ? "Completada" : " Pendiente ")
+                                        </span>
+                                    </td>
+                                    @if (isAdmin)
+                                    {
+                                        <td class="text-center">
+                                            <button class="btn btn-sm btn-outline-info btn-sm-fixed-size" @onclick="() => OpenTaskModal(task.Task)">
+                                                Ver Detalles
+                                            </button>
+                                            <button class="btn btn-sm btn-outline-primary btn-sm-fixed-size" @onclick="() => EditTask(task.Task.Id)">
+                                                Editar
+                                            </button>
+                                            <button class="btn btn-sm @(task.Task.IsCompleted ? "btn-warning" : "btn-success") btn-sm-fixed-size"
+                                                    @onclick="() => ToggleTaskCompletion(task.Task.Id)">
+                                                @(task.Task.IsCompleted ? "Reabrir" : "Completar")
+                                            </button>
+                                            <button class="btn btn-sm btn-outline-danger btn-sm-fixed-size ms-2" @onclick="() => DeleteTask(task.Task.Id)">
+                                                Eliminar
+                                            </button>
+                                        </td>
+                                    }
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            }
+
+            <!-- Modal para agregar una nueva tarea -->
+            @if (showAddTaskModal)
+            {
+                <div class="modal fade show d-block" tabindex="-1" role="dialog">
+                    <div class="modal-dialog" role="document">
+                        <div class="modal-content">
+                            <div class="modal-header">
+                                <h5 class="modal-title">Agregar Nueva Tarea</h5>
+                                <button type="button" class="btn-close" @onclick="CloseAddTaskModal"></button>
+                            </div>
+                            <div class="modal-body">
+                                <div class="mb-3">
+                                    <label for="taskTitle" class="form-label">Título de la Tarea</label>
+                                    <input type="text" class="form-control" id="taskTitle" placeholder="Ingrese el título" @bind="newTaskTitle">
+                                </div>
+                                <div class="mb-3">
+                                    <label for="taskDescription" class="form-label">Descripción</label>
+                                    <textarea class="form-control" id="taskDescription" placeholder="Ingrese una descripción (opcional)" @bind="newTaskDescription"></textarea>
+                                </div>
+                            </div>
+                            <div class="modal-footer">
+                                <button class="btn btn-secondary" @onclick="CloseAddTaskModal">Cancelar</button>
+                                <button class="btn btn-primary" @onclick="AddTask">Guardar</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-backdrop fade show"></div>
+            }
+
+            <!-- Modal para detalles de la tarea -->
+            @if (selectedTask != null)
+            {
+                <div class="modal fade show d-block" tabindex="-1" role="dialog">
+                    <div class="modal-dialog modal-lg" role="document">
+                        <div class="modal-content">
+                            <div class="modal-header">
+                                <h5 class="modal-title">Detalles de la Tarea</h5>
+                                <button type="button" class="btn-close" @onclick="CloseTaskModal"></button>
+                            </div>
+                            <div class="modal-body">
+                                <p><strong>Nombre:</strong> @selectedTask.Title</p>
+                                <p>
+                                    <strong>Estado:</strong>
+                                    <span class="badge @(selectedTask.IsCompleted ? "bg-success" : "bg-warning text-dark")">
+                                        @(selectedTask.IsCompleted ? "Completada" : "Pendiente")
+                                    </span>
+                                </p>
+                                <p><strong>Fecha de Creación:</strong> @selectedTask.CreatedAt.ToString("dd/MM/yyyy")</p>
+                                <p><strong>Descripción:</strong> @(string.IsNullOrEmpty(selectedTask.Description) ? "Sin descripción" : selectedTask.Description)</p>
+                            </div>
+                            <div class="modal-footer">
+                                <button class="btn btn-secondary" @onclick="CloseTaskModal">Cerrar</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-backdrop fade show"></div>
+            }
+
+
+            <!-- Manejo de Archivos y Media -->
+            <h4 class="mt-5">Manejo de Archivos y Media</h4>
+            <div class="row">
+                <!-- Columna para Archivos -->
+                <div class="col-md-6">
+                    <div class="card shadow-lg p-4">
+                        <div class="card-body">
+                            <h5 class="card-title">Subir Archivos</h5>
+                            <input type="file" class="form-control">
+                            <button class="btn btn-outline-success mt-3 btn-fixed-size">Subir Archivo</button>
+
+                            <h6 class="mt-4">Archivos Subidos</h6>
+                            <ul class="list-group">
+                                <li class="list-group-item d-flex justify-content-between align-items-center">
+                                    <span>Documento_ejemplo.pdf</span>
+                                    <button class="btn btn-sm btn-outline-danger btn-sm-fixed-size">Eliminar</button>
+                                </li>
+                                <li class="list-group-item d-flex justify-content-between align-items-center">
+                                    <span>Planos_casa.jpg</span>
+                                    <button class="btn btn-sm btn-outline-danger btn-sm-fixed-size">Eliminar</button>
+                                </li>
+                                <li class="list-group-item d-flex justify-content-between align-items-center">
+                                    <span>Contrato_firma.docx</span>
+                                    <button class="btn btn-sm btn-outline-danger btn-sm-fixed-size">Eliminar</button>
+                                </li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Columna para Media -->
+                <div class="col-md-6">
+                    <div class="card shadow-lg p-4">
+                        <div class="card-body">
+                            <h5 class="card-title">Subir Media</h5>
+                            <input type="file" class="form-control" accept="image/*, video/*">
+                            <button class="btn btn-outline-success mt-3 btn-fixed-size">Subir Media</button>
+
+                            <h6 class="mt-4">Media Subida</h6>
+                            <div class="row">
+                                <!-- Ejemplo de imagen -->
+                                <div class="col-md-6 mb-3">
+                                    <div class="card">
+                                        <div class="media-placeholder">
+                                            <img src="https://images.pexels.com/photos/106399/pexels-photo-106399.jpeg" class="media-content" alt="Imagen de ejemplo">
+                                        </div>
+                                        <div class="card-body">
+                                            <button class="btn btn-sm btn-outline-danger w-100">Eliminar</button>
+                                        </div>
+                                    </div>
+                                </div>
+                                <!-- Ejemplo de video -->
+                                <div class="col-md-6 mb-3">
+                                    <div class="card">
+                                        <div class="media-placeholder">
+                                            <video controls class="media-content">
+                                                <source src="https://www.w3schools.com/html/mov_bbb.mp4" type="video/mp4">
+                                                Tu navegador no soporta videos.
+                                            </video>
+                                        </div>
+                                        <div class="card-body">
+                                            <button class="btn btn-sm btn-outline-danger w-100">Eliminar</button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            
+        }
+    </div>
+</div>
+
+@code {
+    [Parameter] public int Id { get; set; }
+    private Project project;
+    private ApplicationUser client;
+    private ApplicationUser admin;
+    private string newTaskTitle = "";
+    private bool isAdmin = false;
+    private bool showAddTaskModal = false;
+    private string newTaskDescription = "";
+
+    private ProjectTask selectedTask = null;
+
+    private void OpenAddTaskModal()
+    {
+        showAddTaskModal = true;
+    }
+
+    private void CloseAddTaskModal()
+    {
+        showAddTaskModal = false;
+        newTaskTitle = "";
+        newTaskDescription = "";
+    }
+
+    private void OpenTaskModal(ProjectTask task)
+    {
+        selectedTask = task;
+    }
+
+    private void CloseTaskModal()
+    {
+        selectedTask = null;
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
+        var user = authState.User;
+
+        if (user.Identity.IsAuthenticated)
+        {
+            var currentUser = await UserManager.GetUserAsync(user);
+            if (currentUser != null)
+            {
+                var roles = await UserManager.GetRolesAsync(currentUser);
+                isAdmin = roles.Contains("Admin");
+            }
+        }
+
+        project = await ProjectService.GetProjectByIdAsync(Id);
+
+        if (project != null)
+        {
+            client = await UserService.GetUserByIdAsync(project.ClientId);
+            admin = await UserService.GetUserByIdAsync(project.AdminId);
+        }
+    }
+
+    private List<string> houseImages = new()
+    {
+        "https://images.pexels.com/photos/106399/pexels-photo-106399.jpeg",
+        "https://images.pexels.com/photos/259588/pexels-photo-259588.jpeg",
+        "https://images.pexels.com/photos/534151/pexels-photo-534151.jpeg"
+    };
+
+    private async Task AddTask()
+    {
+        if (!string.IsNullOrWhiteSpace(newTaskTitle))
+        {
+            var newTask = new ProjectTask
+                {
+                    Title = newTaskTitle,
+                    Description = newTaskDescription, 
+                    ProjectId = project.Id
+                };
+
+            await ProjectService.AddTaskToProjectAsync(project.Id, newTask);
+            await RefreshProject(); 
+
+            CloseAddTaskModal();
+        }
+    }
+
+    private async Task ToggleTaskCompletion(int taskId)
+    {
+        await ProjectService.ToggleTaskCompletionAsync(taskId);
+        await RefreshProject();
+    }
+
+    private async Task DeleteTask(int taskId)
+    {
+        await ProjectService.DeleteTaskAsync(taskId);
+        await RefreshProject();
+    }
+
+    private async Task RefreshProject()
+    {
+        project = await ProjectService.GetProjectByIdAsync(Id);
+
+        if (project != null)
+        {
+            client = await UserService.GetUserByIdAsync(project.ClientId);
+            admin = await UserService.GetUserByIdAsync(project.AdminId);
+        }
+    }
+
+    private void GoBack()
+    {
+        Navigation.NavigateTo("/projects");
+    }
+
+    private void EditProject()
+    {
+        Navigation.NavigateTo($"/edit-project/{project.Id}");
+    }
+
+    private void EditTask(int taskId)
+    {
+        Navigation.NavigateTo($"/edit-task/{taskId}");
+    }
+
+    private int ProgressPercentage => project.Tasks == null || project.Tasks.Count == 0
+        ? 0
+        : (int)((double)project.Tasks.Count(t => t.IsCompleted) / project.Tasks.Count * 100);
+}

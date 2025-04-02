@@ -1,0 +1,212 @@
+﻿@page "/"
+@using Microsoft.AspNetCore.Identity
+@using Build_Xpert.Model
+@using Build_Xpert.Services
+@inject ProjectService ProjectService
+@inject NavigationManager Navigation
+
+<style>
+    /* Eliminar márgenes y paddings por defecto */
+    body, html {
+        margin: 0;
+        padding: 0;
+        overflow-x: hidden; /* Evita el desbordamiento horizontal */
+    }
+
+    .property-card {
+        border: none;
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        border-radius: 10px;
+        overflow: hidden;
+        transition: transform 0.2s ease-in-out;
+    }
+
+        .property-card:hover {
+            transform: scale(1.03);
+        }
+
+        .property-card img {
+            height: 200px;
+            object-fit: cover;
+            border-radius: 10px 10px 0 0;
+        }
+
+    .property-card-body {
+        padding: 15px;
+    }
+
+    .badge-custom {
+        font-size: 1rem;
+        padding: 5px 10px;
+        border-radius: 20px;
+    }
+
+    .carousel-item img {
+        height: 50vh;
+        object-fit: cover;
+    }
+
+    .carousel-container {
+        position: relative;
+        width: 100%;
+        height: 50vh;
+        overflow: hidden;
+        margin: 0;
+        padding: 0;
+    }
+
+    .carousel-overlay {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        text-align: center;
+        color: white;
+        z-index: 2;
+    }
+
+        .carousel-overlay h1 {
+            font-size: 3rem;
+            font-weight: bold;
+        }
+
+        .carousel-overlay button {
+            margin-top: 30px;
+        }
+</style>
+
+<div class="carousel-container">
+    <!-- Carrusel de imágenes -->
+    <div id="propertyCarousel" class="carousel slide" data-bs-ride="carousel">
+        <div class="carousel-inner">
+            @for (int i = 0; i < carouselImages.Count; i++)
+            {
+                <div class="carousel-item @(i == 0 ? "active" : "")">
+                    <img src="@carouselImages[i]" class="d-block w-100" alt="Casa @i">
+                </div>
+            }
+        </div>
+        <button class="carousel-control-prev" type="button" data-bs-target="#propertyCarousel" data-bs-slide="prev">
+            <span class="carousel-control-prev-icon" aria-hidden="true"></span>
+            <span class="visually-hidden">Anterior</span>
+        </button>
+        <button class="carousel-control-next" type="button" data-bs-target="#propertyCarousel" data-bs-slide="next">
+            <span class="carousel-control-next-icon" aria-hidden="true"></span>
+            <span class="visually-hidden">Siguiente</span>
+        </button>
+    </div>
+
+    <!-- Texto y botón superpuestos -->
+    <div class="carousel-overlay">
+        <h1>Bienvenido a Grupo DCI</h1>
+        <button class="btn btn-primary btn-lg" @onclick="GoToProperties">Ver mas</button>
+    </div>
+</div>
+
+<div class="container mt-5">
+    <!-- Filtros de búsqueda -->
+    <div class="row mb-4">
+        <div class="col-md-6">
+            <input type="text" class="form-control" placeholder="Buscar por nombre..." @bind="searchText">
+        </div>
+        <div class="col-md-4">
+            <select class="form-control" @bind="selectedStatus">
+                <option value="">Todos los estados</option>
+                <option value="Venta">Venta</option>
+                <option value="Construcción">Construcción</option>
+                <option value="Remodelación">Remodelación</option>
+                <option value="Entregado">Entregado</option>
+            </select>
+        </div>
+        <div class="col-md-2">
+            <button class="btn btn-primary w-100" @onclick="ApplyFilters">Filtrar</button>
+        </div>
+    </div>
+
+    <!-- Mostrar propiedades en tarjetas -->
+    @if (properties == null)
+    {
+        <div class="text-center">
+            <div class="spinner-border text-primary" role="status">
+                <span class="visually-hidden">Cargando...</span>
+            </div>
+            <p class="mt-2">Cargando propiedades...</p>
+        </div>
+    }
+    else if (properties.Count == 0)
+    {
+        <div class="alert alert-warning text-center">No hay propiedades disponibles.</div>
+    }
+    else
+    {
+        <div class="row">
+            @foreach (var property in properties)
+            {
+                <div class="col-md-4 mb-4">
+                    <div class="card property-card">
+                        <img src="@GetPropertyImage()" class="card-img-top" alt="Imagen de propiedad">
+                        <div class="property-card-body">
+                            <h5 class="card-title">@property.Name</h5>
+                            <p class="text-muted">@property.Province, @property.Canton</p>
+                            <p><strong>💰 Precio:</strong> <span class="badge bg-success badge-custom">@($"{property.Price:C}")</span></p>
+                            <p><strong>📏 Área:</strong> @(property.ConstructionSize + property.LandSize) m²</p>
+                            <p><strong>🏠 Tipo:</strong> @property.ConstructionType</p>
+                            <p><strong>Estado:</strong> <span class="badge bg-info">@property.Status</span></p>
+                            <button class="btn btn-outline-primary w-100 mt-2" @onclick="() => GoToPropertyDetails(property.Id)">Ver Detalles</button>
+                        </div>
+                    </div>
+                </div>
+            }
+        </div>
+    }
+</div>
+
+@code {
+    private List<Project> properties = new();
+    private string searchText = "";
+    private string selectedStatus = "";
+    private List<string> carouselImages = new()
+    {
+        "https://t4.ftcdn.net/jpg/03/20/87/47/360_F_320874769_eyM3wGufm3AgcWgXH1t5LxrOYppRfW4A.jpg",
+        "https://media.newhomeinc.com/348/2023/2/24/Morehead-Low-Country-1.jpg",
+        "https://dropinblog.net/34246798/files/featured/Home_Interior__Budget_Friendly_Once_for_Every_Homeowner.png",
+        "https://cityfurnish.com/blog/wp-content/uploads/2023/09/modren-room-home-interior-design-min.jpg",
+        "https://media.designcafe.com/wp-content/uploads/2023/03/14120252/mansion-interior.jpg"
+    };
+
+    protected override async Task OnInitializedAsync()
+    {
+        properties = await ProjectService.GetProjectsAsync();
+    }
+
+    private void ApplyFilters()
+    {
+        properties = properties
+            .Where(p => (string.IsNullOrEmpty(searchText) || p.Name.Contains(searchText, StringComparison.OrdinalIgnoreCase)) &&
+                        (string.IsNullOrEmpty(selectedStatus) || p.Status == selectedStatus))
+            .ToList();
+    }
+
+    private void GoToPropertyDetails(int propertyId)
+    {
+        Navigation.NavigateTo($"/property-details/{propertyId}");
+    }
+
+    private void GoToProperties()
+    {
+        Navigation.NavigateTo("/properties");
+    }
+
+    private string GetPropertyImage()
+    {
+        List<string> images = new()
+        {
+            "https://t4.ftcdn.net/jpg/03/20/87/47/360_F_320874769_eyM3wGufm3AgcWgXH1t5LxrOYppRfW4A.jpg",
+            "https://media.newhomeinc.com/348/2023/2/24/Morehead-Low-Country-1.jpg",
+            "https://dropinblog.net/34246798/files/featured/Home_Interior__Budget_Friendly_Once_for_Every_Homeowner.png",
+            "https://cityfurnish.com/blog/wp-content/uploads/2023/09/modren-room-home-interior-design-min.jpg",
+            "https://media.designcafe.com/wp-content/uploads/2023/03/14120252/mansion-interior.jpg"
+        };
+        return images[new Random().Next(images.Count)];
+    }
+}

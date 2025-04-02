@@ -1,0 +1,153 @@
+﻿@inherits LayoutComponentBase
+
+<div class="page">
+    <!-- Sidebar -->
+    <div class="sidebar-container">
+        <NavMenu />
+    </div>
+
+    <!-- Contenedor principal -->
+    <main class="main-content">
+        <article class="content px-6">
+            @Body
+        </article>
+    </main>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="footer-content">
+            <div class="footer-section">
+                <h4>Servicios</h4>
+                <ul>
+                    <li><a href="/proyectos">Proyectos</a></li>
+                    <li><a href="/construccion">Construcción</a></li>
+                    <li><a href="/remodelacion">Remodelaciones</a></li>
+                    <li><a href="/contacto">Contacto</a></li>
+                </ul>
+            </div>
+            <div class="footer-section">
+                <h4>Acerca de Grupo DCI</h4>
+                <ul>
+                    <li><a href="/nosotros">Quiénes Somos</a></li>
+                    <li><a href="/valores">Nuestros Valores</a></li>
+                </ul>
+            </div>
+            <div class="footer-section">
+                <h4>Contacto</h4>
+                <p>San José, Costa Rica</p>
+                <p>Teléfono: +506 2222-3333</p>
+                <p>Email: info@grupodci.com</p>
+            </div>
+            <div class="footer-section">
+                <h4>Newsletter</h4>
+                <form>
+                    <input type="email" placeholder="Ingresa tu correo" />
+                    <button type="submit">Suscribirse</button>
+                </form>
+            </div>
+        </div>
+        <div class="footer-bottom">
+            <div class="footer-links">
+                <a href="/politica-privacidad">Política de Privacidad</a> |
+                <a href="/terminos-condiciones">Términos y Condiciones</a>
+            </div>
+            <div class="social-media">
+                <a href="https://facebook.com">Facebook</a> |
+                <a href="https://linkedin.com">LinkedIn</a> |
+                <a href="https://instagram.com">Instagram</a>
+            </div>
+            <div class="copyright">
+                &copy; 2025 Grupo DCI - Construcción y Remodelaciones
+            </div>
+        </div>
+    </footer>
+</div>
+
+<!-- Manejo de errores de Blazor -->
+<div id="blazor-error-ui" data-nosnippet>
+    Se ha producido un error inesperado.
+    <a href="." class="reload">Recargar</a>
+    <span class="dismiss">🗙</span>
+</div>
+
+<style>
+    /* Asegurar que el footer esté pegado al fondo */
+    html, body {
+        height: 100%;
+        margin: 0;
+        display: flex;
+        flex-direction: column;
+    }
+
+    .page-container {
+        display: flex;
+        flex-direction: column;
+        min-height: 100vh;
+    }
+
+    .main-content {
+        flex: 1;
+    }
+
+    /* Footer */
+    .footer {
+        background-color: #333;
+        color: white;
+        padding: 20px;
+        text-align: center;
+        width: 100%;
+        margin-top: 90px;
+    }
+
+    .footer-content {
+        display: flex;
+        justify-content: space-around;
+        flex-wrap: wrap;
+    }
+
+    .footer-section {
+        margin: 10px;
+    }
+
+        .footer-section h4 {
+            margin-bottom: 15px;
+        }
+
+        .footer-section ul {
+            list-style: none;
+            padding: 0;
+        }
+
+            .footer-section ul li {
+                margin: 5px 0;
+            }
+
+        .footer-section a {
+            color: white;
+            text-decoration: none;
+        }
+
+            .footer-section a:hover {
+                text-decoration: underline;
+            }
+
+    .footer-bottom {
+        margin-top: 20px;
+        border-top: 1px solid #444;
+        padding-top: 10px;
+    }
+
+    .footer-links a, .social-media a {
+        color: white;
+        text-decoration: none;
+        margin: 0 5px;
+    }
+
+        .footer-links a:hover, .social-media a:hover {
+            text-decoration: underline;
+        }
+
+    .copyright {
+        margin-top: 10px;
+    }
+</style>

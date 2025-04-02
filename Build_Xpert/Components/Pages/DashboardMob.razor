@@ -1,0 +1,15 @@
+﻿@page "/dashboard-mob"
+@attribute [Microsoft.AspNetCore.Authorization.Authorize(Roles = "MOBS")]
+<PageTitle>Dashboard Maestro de Obras</PageTitle>
+
+<h2 class="text-center">Bienvenido Maestro de Obras</h2>
+
+<div class="container mt-4">
+    <div class="card">
+        <div class="card-body">
+            <h4>Gestión de Construcción</h4>
+            <p>Consulta el estado de las obras y asigna tareas.</p>
+            <button class="btn btn-warning">Ver Obras</button>
+        </div>
+    </div>
+</div>

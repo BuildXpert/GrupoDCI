@@ -1,0 +1,94 @@
+﻿@page "/add-user"
+@attribute [Microsoft.AspNetCore.Authorization.Authorize(Roles = "Admin")]
+@using Build_Xpert.Model
+@using Build_Xpert.Services
+@using System.ComponentModel.DataAnnotations
+@inject UserService UserService
+@inject NavigationManager Navigation
+
+<div class="container mt-5">
+    <div class="row justify-content-center">
+        <div class="col-md-8 col-lg-6">
+            <div class="card shadow-lg p-4">
+                <div class="card-body">
+                    <h3 class="card-title text-primary text-center">Agregar Nuevo Usuario</h3>
+                    <p class="text-muted text-center">Ingrese los detalles del nuevo usuario.</p>
+
+                    <EditForm Model="@UserModel" OnValidSubmit="HandleValidSubmit">
+                        <DataAnnotationsValidator />
+                        <ValidationSummary class="text-danger" />
+
+                        <!-- Correo -->
+                        <div class="form-floating mb-3">
+                            <InputText id="email" class="form-control" placeholder="Correo electrónico" @bind-Value="UserModel.Email" />
+                            <label for="email">Correo Electrónico</label>
+                            <ValidationMessage For="@(() => UserModel.Email)" class="text-danger" />
+                        </div>
+
+                        <!-- Contraseña -->
+                        <div class="form-floating mb-3">
+                            <InputText id="password" type="password" class="form-control" placeholder="Contraseña" @bind-Value="UserModel.Password" />
+                            <label for="password">Contraseña</label>
+                            <ValidationMessage For="@(() => UserModel.Password)" class="text-danger" />
+                        </div>
+
+                        <!-- Botones -->
+                        <div class="d-flex justify-content-end gap-2">
+                            <button type="submit" class="btn btn-primary">Guardar Usuario</button>
+                            <button type="button" class="btn btn-outline-secondary" @onclick="Cancel">Cancelar</button>
+                        </div>
+                    </EditForm>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@code {
+    private AddUserModel UserModel = new AddUserModel();
+
+    private async Task HandleValidSubmit()
+    {
+        try
+        {
+            var result = await UserService.CreateUserAsync(UserModel.Email, UserModel.Password);
+
+            if (result.Succeeded)
+            {
+                Console.WriteLine("Usuario agregado exitosamente.");
+                Navigation.NavigateTo("/admin/users");
+            }
+            else
+            {
+                foreach (var error in result.Errors)
+                {
+                    Console.WriteLine($"Error: {error.Description}");
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error al agregar el usuario: {ex.Message}");
+        }
+        finally
+        {
+            UserModel = new AddUserModel();
+        }
+    }
+
+    private void Cancel()
+    {
+        Navigation.NavigateTo("/admin/users");
+    }
+
+    public class AddUserModel
+    {
+        [Required(ErrorMessage = "El correo electrónico es obligatorio.")]
+        [EmailAddress(ErrorMessage = "El correo electrónico no es válido.")]
+        public string Email { get; set; }
+
+        [Required(ErrorMessage = "La contraseña es obligatoria.")]
+        [MinLength(6, ErrorMessage = "La contraseña debe tener al menos 6 caracteres.")]
+        public string Password { get; set; }
+    }
+}

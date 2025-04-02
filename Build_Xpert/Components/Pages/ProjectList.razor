@@ -1,0 +1,91 @@
+﻿@page "/projects"
+@using Build_Xpert.Model
+@using Build_Xpert.Services
+@inject ProjectService ProjectService
+@inject NavigationManager Navigation
+
+<div class="container mt-4">
+    <h3 class="text-center text-primary">Lista de Proyectos</h3>
+    <p class="text-muted text-center">Explora nuestros proyectos en desarrollo y completados.</p>
+
+    <div class="row mb-4">
+        <div class="col-md-8">
+            <input type="text" class="form-control" placeholder="Buscar por nombre o descripción..." @bind="searchText" />
+        </div>
+        <div class="col-md-2">
+            <button class="btn btn-outline-primary w-100" @onclick="FilterProjects">🔍 Buscar</button>
+        </div>
+        <div class="col-md-2">
+            <button class="btn btn-outline-secondary w-100" @onclick="ClearFilters">❌ Limpiar</button>
+        </div>
+    </div>
+
+    @if (filteredProjects == null)
+    {
+        <div class="text-center mt-4">
+            <div class="spinner-border text-primary" role="status">
+                <span class="visually-hidden">Cargando...</span>
+            </div>
+            <p class="mt-2">Cargando proyectos...</p>
+        </div>
+    }
+    else if (filteredProjects.Count == 0)
+    {
+        <p class="text-muted text-center mt-3">No se encontraron proyectos con los criterios seleccionados.</p>
+    }
+    else
+    {
+        <div class="row row-cols-1 row-cols-md-3 g-4">
+            @foreach (var project in filteredProjects)
+            {
+                <div class="col">
+                    <div class="card shadow-lg rounded overflow-hidden">
+                        <img src="https://picsum.photos/300/200?random=@project.Id" class="card-img-top" alt="Imagen del proyecto">
+
+                        <div class="card-body">
+                            <h5 class="card-title text-dark">@project.Name</h5>
+                            <p class="card-text text-muted">@project.Description</p>
+
+                            <div class="d-flex justify-content-between mt-3">
+                                <button class="btn btn-outline-primary w-100 me-2" @onclick="() => ViewDetails(project.Id)">Ver Detalles</button>
+                                <button class="btn btn-outline-danger w-100" @onclick="() => DeleteProject(project.Id)">Eliminar</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            }
+        </div>
+    }
+</div>
+
+@code {
+    private List<Project> filteredProjects;
+    private string searchText = "";
+
+    protected override async Task OnInitializedAsync()
+    {
+        await FilterProjects();
+    }
+
+    private async Task DeleteProject(int id)
+    {
+        await ProjectService.DeleteProjectAsync(id);
+        await FilterProjects();
+    }
+
+    private void ViewDetails(int id)
+    {
+        Navigation.NavigateTo($"/project-details/{id}");
+    }
+
+    private async Task FilterProjects()
+    {
+        filteredProjects = await ProjectService.GetFilteredProjectsAsync(searchText, "");
+    }
+
+    private async Task ClearFilters()
+    {
+        searchText = "";
+        await FilterProjects();
+    }
+}

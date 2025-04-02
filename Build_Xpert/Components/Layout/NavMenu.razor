@@ -1,0 +1,182 @@
+﻿@implements IDisposable
+@inject AuthenticationStateProvider AuthenticationStateProvider
+@inject NavigationManager NavigationManager
+
+<div class="top-row ps-3 navbar navbar-dark">
+    <div class="container-fluid">
+
+            <button class="navbar-toggler" type="button" @onclick="ToggleSidebar" style="border: none; background: none;">
+                <span class="navbar-toggler-icon" style="color: white;"></span>
+            </button>
+
+
+            <div class="mx-auto">
+             <a href="/">
+                <img src="https://i.ibb.co/5xnGs143/image-2025-02-27-154119843-processed.png" alt="Logo Empresa" class="logo-empresa">
+            </a>
+            </div>
+
+            <div class="me-3">
+            <a href="/Account/Manage">
+                <img src="https://www.pngall.com/wp-content/uploads/5/Profile-PNG-File.png" alt="Perfil" class="perfil-icono">
+                </a>
+            </div>
+
+
+    </div>
+</div>
+
+<div class="sidebar @(isCollapsed ? "collapsed" : "")">
+    <hr />
+
+    <!-- Imagen de Usuario y Bienvenida -->
+    <div class="nav-item px-3 text-center">
+        <img src="https://www.lavanguardia.com/files/content_image_mobile_filter/uploads/2018/07/25/5fa43c9755611.jpeg"
+             alt="Imagen del Usuario" class="user-image-profile rounded-circle" style="width: 80px; height: 80px; object-fit: cover;" />
+
+        <h6 style="color: white; padding: 15px; font-weight: bold;">
+            <i class="bi bi-person-circle"></i> Bienvenido
+        </h6>
+        <h6 style="color: white; font-weight: bold; font-size: 15px;">@UserName</h6>
+    </div>
+
+    <hr style="border: 1px solid #ffffff; margin: 5px 0;">
+
+    <!-- Menú de Navegación -->
+    <nav class="nav flex-column">
+
+        <div class="nav-item px-3">
+            <NavLink class="nav-link" href="" Match="NavLinkMatch.All">
+                <i class="bi bi-house-door-fill"></i> Home
+            </NavLink>
+        </div>
+
+        <div class="nav-item px-3">
+            <NavLink class="nav-link" href="projects">
+                <i class="bi bi-card-list"></i> Lista de Proyectos
+            </NavLink>
+        </div>
+
+        <AuthorizeView Roles="Admin">
+            <div class="nav-item px-3">
+                <NavLink class="nav-link" href="add-project">
+                    <i class="bi bi-plus-square"></i> Agregar Proyecto
+                </NavLink>
+            </div>
+        </AuthorizeView>
+
+        <AuthorizeView Roles="Admin">
+            <div class="nav-item px-3">
+                <NavLink class="nav-link" href="dashboard-cliente">
+                    <i class="bi bi-person-workspace"></i> Dashboard Cliente
+                </NavLink>
+            </div>
+        </AuthorizeView>
+
+        <AuthorizeView Roles="MOBS">
+            <div class="nav-item px-3">
+                <NavLink class="nav-link" href="dashboard-mob">
+                    <i class="bi bi-buildings"></i> Dashboard MOBS
+                </NavLink>
+            </div>
+        </AuthorizeView>
+
+        <AuthorizeView Roles="Admin">
+            <div class="nav-item px-3">
+                <NavLink class="nav-link" href="dashboard-admin">
+                    <i class="bi bi-person-gear"></i> Dashboard Admin
+                </NavLink>
+            </div>
+        </AuthorizeView>
+
+        <AuthorizeView Roles="Bancario">
+            <div class="nav-item px-3">
+                <NavLink class="nav-link" href="dashboard-bancario">
+                    <i class="bi bi-bank"></i> Dashboard Bancario
+                </NavLink>
+            </div>
+        </AuthorizeView>
+
+        <AuthorizeView Roles="Cliente">
+            <div class="nav-item px-3">
+                <NavLink class="nav-link" href="admin/users">
+                    <i class="bi bi-people-fill"></i> Gestión de Usuarios
+                </NavLink>
+            </div>
+        </AuthorizeView>
+
+        <AuthorizeView Roles="Admin">
+            <div class="nav-item px-3">
+                <NavLink class="nav-link" href="proveedores">
+                    <i class="bi bi-briefcase-fill"></i> Proveedores
+                </NavLink>
+            </div>
+        </AuthorizeView>
+
+        <AuthorizeView>
+            <Authorized>
+                <div class="nav-item px-3">
+                    <NavLink class="nav-link" href="Account/Manage">
+                        <i class="bi bi-person-fill"></i> Perfil
+                    </NavLink>
+                </div>
+                <div class="nav-item px-3">
+                    <form action="Account/Logout" method="post">
+                        <AntiforgeryToken />
+                        <input type="hidden" name="ReturnUrl" value="@currentUrl" />
+                        <button type="submit" class="nav-link">
+                            <i class="bi bi-box-arrow-left"></i> Logout
+                        </button>
+                    </form>
+                </div>
+            </Authorized>
+            <NotAuthorized>
+                <div class="nav-item px-3">
+                    <NavLink class="nav-link" href="Account/Register">
+                        <i class="bi bi-person-plus"></i> Register
+                    </NavLink>
+                </div>
+                <div class="nav-item px-3">
+                    <NavLink class="nav-link" href="Account/Login">
+                        <i class="bi bi-person-badge"></i> Login
+                    </NavLink>
+                </div>
+            </NotAuthorized>
+        </AuthorizeView>
+    </nav>
+</div>
+
+@code {
+    private string? currentUrl;
+    private bool isCollapsed = true;
+    private string UserName { get; set; } = "Guest";
+
+    protected override async Task OnInitializedAsync()
+    {
+        currentUrl = NavigationManager.ToBaseRelativePath(NavigationManager.Uri);
+        NavigationManager.LocationChanged += OnLocationChanged;
+
+        var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
+        var user = authState.User;
+
+        if (user.Identity?.IsAuthenticated == true)
+        {
+            UserName = user.Identity.Name;
+        }
+    }
+
+    private void OnLocationChanged(object? sender, LocationChangedEventArgs e)
+    {
+        currentUrl = "/";
+    }
+
+    public void Dispose()
+    {
+        NavigationManager.LocationChanged -= OnLocationChanged;
+    }
+
+    private void ToggleSidebar()
+    {
+        isCollapsed = !isCollapsed;
+    }
+}

@@ -1,0 +1,110 @@
+﻿@page "/Account/Manage"
+
+@using System.ComponentModel.DataAnnotations
+@using Build_Xpert.Components.Account
+@using Microsoft.AspNetCore.Identity
+@using Build_Xpert.Model
+
+@inject UserManager<ApplicationUser> UserManager
+@inject SignInManager<ApplicationUser> SignInManager
+@inject IdentityUserAccessor UserAccessor
+@inject IdentityRedirectManager RedirectManager
+@inject IWebHostEnvironment WebHostEnvironment
+
+<PageTitle>Profile</PageTitle>
+
+<h3 class="text-center">Profile</h3>
+<StatusMessage />
+
+<div class="d-flex justify-content-center align-items-center flex-column">
+    <img src="@profilePicture" class="rounded-circle mb-3" alt="Profile Picture" style="width: 150px; height: 150px; object-fit: cover; border: 2px solid #ccc;">
+    <InputFile OnChange="UploadProfilePicture" class="form-control mb-3 w-auto" />
+
+    <div class="col-md-6">
+        <EditForm Model="Input" FormName="profile" OnValidSubmit="OnValidSubmitAsync" method="post">
+            <DataAnnotationsValidator />
+            <ValidationSummary class="text-danger" role="alert" />
+            <div class="form-floating mb-3">
+                <input type="text" value="@username" id="username" class="form-control" placeholder="Choose your username." disabled />
+                <label for="username" class="form-label">Username</label>
+            </div>
+            <div class="form-floating mb-3">
+                <InputText @bind-Value="Input.Email" id="Input.Email" class="form-control" placeholder="Enter your email" disabled />
+                <label for="Input.Email" class="form-label">Email</label>
+            </div>
+            <div class="form-floating mb-3">
+                <InputText @bind-Value="Input.PhoneNumber" id="Input.PhoneNumber" class="form-control" placeholder="Enter your phone number" />
+                <label for="Input.PhoneNumber" class="form-label">Phone number</label>
+                <ValidationMessage For="() => Input.PhoneNumber" class="text-danger" />
+            </div>
+            <div class="form-floating mb-3">
+                <InputText @bind-Value="Input.Role" id="Input.Role" class="form-control" placeholder="User Role" disabled />
+                <label for="Input.Role" class="form-label">Role</label>
+            </div>
+            <button type="submit" class="w-100 btn btn-lg btn-primary">Save</button>
+        </EditForm>
+    </div>
+</div>
+
+@code {
+    private ApplicationUser user = default!;
+    private string? username;
+    private string? phoneNumber;
+    private string profilePicture = "https://www.lavanguardia.com/files/content_image_mobile_filter/uploads/2018/07/25/5fa43c9755611.jpeg";
+
+    [CascadingParameter]
+    private HttpContext HttpContext { get; set; } = default!;
+
+    [SupplyParameterFromForm]
+    private InputModel Input { get; set; } = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        user = await UserAccessor.GetRequiredUserAsync(HttpContext);
+        username = await UserManager.GetUserNameAsync(user);
+        phoneNumber = await UserManager.GetPhoneNumberAsync(user);
+
+        Input.Email = await UserManager.GetEmailAsync(user);
+        Input.PhoneNumber ??= phoneNumber;
+        Input.Role = (await UserManager.GetRolesAsync(user)).FirstOrDefault() ?? "User";
+    }
+
+    private async Task UploadProfilePicture(InputFileChangeEventArgs e)
+    {
+        var file = e.File;
+        if (file != null)
+        {
+            profilePicture = "images/default-profile.png"; // Simulando el cambio sin guardar
+        }
+    }
+
+    private async Task OnValidSubmitAsync()
+    {
+        if (Input.PhoneNumber != phoneNumber)
+        {
+            var setPhoneResult = await UserManager.SetPhoneNumberAsync(user, Input.PhoneNumber);
+            if (!setPhoneResult.Succeeded)
+            {
+                RedirectManager.RedirectToCurrentPageWithStatus("Error: Failed to set phone number.", HttpContext);
+            }
+        }
+
+        await UserManager.UpdateAsync(user);
+        await SignInManager.RefreshSignInAsync(user);
+        RedirectManager.RedirectToCurrentPageWithStatus("Your profile has been updated", HttpContext);
+    }
+
+    private sealed class InputModel
+    {
+        [Required]
+        [EmailAddress]
+        public string? Email { get; set; }
+
+        [Phone]
+        [Display(Name = "Phone number")]
+        public string? PhoneNumber { get; set; }
+
+        public string? Address { get; set; }
+        public string? Role { get; set; }
+    }
+}

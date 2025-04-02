@@ -1,0 +1,103 @@
+﻿@page "/edit-user/{id}"
+@attribute [Microsoft.AspNetCore.Authorization.Authorize(Roles = "Admin")]
+@using Build_Xpert.Model
+@using Build_Xpert.Services
+@inject UserService UserService
+@inject NavigationManager NavigationManager
+
+<div class="container mt-4">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card shadow-lg p-4">
+                <div class="card-body">
+                    <h3 class="card-title text-primary text-center">Editar Usuario</h3>
+                    <p class="text-muted text-center">Modifica la información del usuario seleccionado.</p>
+
+                    @if (user == null)
+                    {
+                        <div class="text-center mt-4">
+                            <div class="spinner-border text-primary" role="status">
+                                <span class="visually-hidden">Cargando...</span>
+                            </div>
+                            <p class="mt-2">Cargando datos del usuario...</p>
+                        </div>
+                    }
+                    else
+                    {
+                        <EditForm Model="user" OnValidSubmit="SaveChanges">
+                            <DataAnnotationsValidator />
+                            <ValidationSummary class="text-danger" />
+
+                            <div class="form-floating mb-3">
+                                <InputText @bind-Value="user.UserName" class="form-control" placeholder="Nombre de Usuario" />
+                                <label>Nombre de Usuario</label>
+                            </div>
+
+                            <div class="form-floating mb-3">
+                                <InputText @bind-Value="user.Email" class="form-control" placeholder="Correo Electrónico" />
+                                <label>Correo Electrónico</label>
+                            </div>
+
+                            <div class="form-floating mb-3">
+                                <InputText @bind-Value="user.PhoneNumber" class="form-control" placeholder="Teléfono" />
+                                <label>Teléfono</label>
+                            </div>
+
+                            <div class="form-floating mb-3">
+                                <select class="form-select text-center" @bind="selectedRole">
+                                    @foreach (var role in availableRoles)
+                                    {
+                                        <option value="@role">@role</option>
+                                    }
+                                </select>
+                                <label>Rol del Usuario</label>
+                            </div>
+
+                            <div class="d-flex justify-content-center gap-3 mt-3">
+                                <button type="submit" class="btn btn-success px-4">Guardar Cambios</button>
+                                <button type="button" class="btn btn-outline-danger px-4" @onclick="GoBack">Cancelar</button>
+                            </div>
+                        </EditForm>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@code {
+    [Parameter] public string Id { get; set; }
+    private ApplicationUser user;
+    private List<string> availableRoles = new();
+    private string selectedRole = "";
+
+    protected override async Task OnInitializedAsync()
+    {
+        user = await UserService.GetUserByIdAsync(Id);
+        availableRoles = await UserService.GetRolesAsync();
+        var userRoles = await UserService.GetUserRolesAsync(Id);
+        selectedRole = userRoles.FirstOrDefault() ?? "Cliente";
+    }
+
+    private async Task SaveChanges()
+    {
+        if (user != null)
+        {
+            var result = await UserService.UpdateUserAsync(user.Id, user.Email, selectedRole);
+
+            if (result.Succeeded)
+            {
+                NavigationManager.NavigateTo("/admin/users");
+            }
+            else
+            {
+                Console.WriteLine("Error al actualizar el usuario.");
+            }
+        }
+    }
+
+    private void GoBack()
+    {
+        NavigationManager.NavigateTo("/admin/users");
+    }
+}

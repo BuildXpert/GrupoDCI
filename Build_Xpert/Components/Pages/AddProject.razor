@@ -1,0 +1,224 @@
+﻿@page "/add-project"
+@attribute [Microsoft.AspNetCore.Authorization.Authorize(Roles = "Admin,MOBS")]
+@using Build_Xpert.Model
+@using Build_Xpert.Services
+@inject ProjectService ProjectService
+@inject UserService UserService
+@inject NavigationManager Navigation
+
+<div class="container mt-4">
+    <div class="row justify-content-center">
+        <div class="col-md-10">
+            <div class="card shadow-lg p-4">
+                <div class="card-body">
+                    <h3 class="card-title text-primary text-center">Agregar Nuevo Proyecto</h3>
+                    <p class="text-muted text-center">Ingrese los detalles del nuevo proyecto.</p>
+
+                    @if (Clients == null || Admins == null)
+                    {
+                        <div class="text-center mt-4">
+                            <div class="spinner-border text-primary" role="status">
+                                <span class="visually-hidden">Cargando usuarios...</span>
+                            </div>
+                            <p class="mt-2">Cargando datos...</p>
+                        </div>
+                    }
+                    else
+                    {
+                        <EditForm Model="NewProject" OnValidSubmit="HandleValidSubmit">
+                            <DataAnnotationsValidator />
+                            <ValidationSummary class="text-danger" />
+
+                            <!-- Nombre del Proyecto -->
+                            <div class="form-floating mb-3">
+                                <InputText class="form-control" id="name" placeholder="Nombre del proyecto" @bind-Value="NewProject.Name" />
+                                <label for="name">Nombre del Proyecto</label>
+                                <ValidationMessage For="@(() => NewProject.Name)" class="text-danger" />
+                            </div>
+
+                            <!-- Descripción del Proyecto -->
+                            <div class="form-floating mb-3">
+                                <InputTextArea class="form-control" id="description" placeholder="Descripción" @bind-Value="NewProject.Description" />
+                                <label for="description">Descripción</label>
+                                <ValidationMessage For="@(() => NewProject.Description)" class="text-danger" />
+                            </div>
+
+                            <!-- Tipo de Construcción -->
+                            <div class="form-floating mb-3">
+                                <InputSelect class="form-select" @bind-Value="NewProject.ConstructionType">
+                                    <option value="">Seleccione el tipo de construcción</option>
+                                    <option value="Prefabricados">Prefabricados</option>
+                                    <option value="Block">Block</option>
+                                </InputSelect>
+                                <label for="constructionType">Tipo de Construcción</label>
+                                <ValidationMessage For="@(() => NewProject.ConstructionType)" class="text-danger" />
+                            </div>
+
+                            <!-- Ubicación Geográfica -->
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="form-floating mb-3">
+                                        <InputText class="form-control" id="province" placeholder="Provincia" @bind-Value="NewProject.Province" />
+                                        <label for="province">Provincia</label>
+                                        <ValidationMessage For="@(() => NewProject.Province)" class="text-danger" />
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="form-floating mb-3">
+                                        <InputText class="form-control" id="canton" placeholder="Cantón" @bind-Value="NewProject.Canton" />
+                                        <label for="canton">Cantón</label>
+                                        <ValidationMessage For="@(() => NewProject.Canton)" class="text-danger" />
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Habitaciones y Baños -->
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="form-floating mb-3">
+                                        <InputNumber class="form-control" id="bedrooms" placeholder="Habitaciones" @bind-Value="NewProject.Bedrooms" />
+                                        <label for="bedrooms">Habitaciones</label>
+                                        <ValidationMessage For="@(() => NewProject.Bedrooms)" class="text-danger" />
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="form-floating mb-3">
+                                        <InputNumber class="form-control" id="bathrooms" placeholder="Baños" @bind-Value="NewProject.Bathrooms" />
+                                        <label for="bathrooms">Baños</label>
+                                        <ValidationMessage For="@(() => NewProject.Bathrooms)" class="text-danger" />
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Precio -->
+                            <div class="form-floating mb-3">
+                                <InputNumber class="form-control" id="price" placeholder="Precio" @bind-Value="NewProject.Price" />
+                                <label for="price">Precio</label>
+                                <ValidationMessage For="@(() => NewProject.Price)" class="text-danger" />
+                            </div>
+
+                            <!-- Tamaño de Construcción y Terreno -->
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="form-floating mb-3">
+                                        <InputNumber class="form-control" id="constructionSize" placeholder="Tamaño de Construcción" @bind-Value="NewProject.ConstructionSize" />
+                                        <label for="constructionSize">Tamaño de Construcción (m²)</label>
+                                        <ValidationMessage For="@(() => NewProject.ConstructionSize)" class="text-danger" />
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="form-floating mb-3">
+                                        <InputNumber class="form-control" id="landSize" placeholder="Tamaño de Terreno" @bind-Value="NewProject.LandSize" />
+                                        <label for="landSize">Tamaño de Terreno (m²)</label>
+                                        <ValidationMessage For="@(() => NewProject.LandSize)" class="text-danger" />
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Plantas -->
+                            <div class="form-floating mb-3">
+                                <InputNumber class="form-control" id="floors" placeholder="Plantas" @bind-Value="NewProject.Floors" />
+                                <label for="floors">Plantas</label>
+                                <ValidationMessage For="@(() => NewProject.Floors)" class="text-danger" />
+                            </div>
+
+                            <!-- Cochera -->
+                            <div class="form-floating mb-3">
+                                <InputSelect class="form-select" @bind-Value="NewProject.HasGarage">
+                                    <option value="true">Sí</option>
+                                    <option value="false">No</option>
+                                </InputSelect>
+                                <label for="hasGarage">¿Tiene Cochera?</label>
+                                <ValidationMessage For="@(() => NewProject.HasGarage)" class="text-danger" />
+                            </div>
+
+                            <!-- Capacidad de Cochera -->
+                            <div class="form-floating mb-3">
+                                <InputNumber class="form-control" id="garageCapacity" placeholder="Capacidad de Cochera" @bind-Value="NewProject.GarageCapacity" />
+                                <label for="garageCapacity">Capacidad de Cochera</label>
+                                <ValidationMessage For="@(() => NewProject.GarageCapacity)" class="text-danger" />
+                            </div>
+
+                            <!-- Condominio -->
+                            <div class="form-floating mb-3">
+                                <InputSelect class="form-select" @bind-Value="NewProject.IsCondominium">
+                                    <option value="true">Sí</option>
+                                    <option value="false">No</option>
+                                </InputSelect>
+                                <label for="isCondominium">¿Es en Condominio?</label>
+                                <ValidationMessage For="@(() => NewProject.IsCondominium)" class="text-danger" />
+                            </div>
+
+                            <!-- Seleccionar Cliente -->
+                            <div class="mb-3">
+                                <label for="client" class="form-label">Cliente</label>
+                                <select id="client" class="form-select" @bind="SelectedClientId">
+                                    <option value="">Seleccione un Cliente</option>
+                                    @foreach (var user in Clients)
+                                    {
+                                        <option value="@user.Id">@user.UserName (@user.Email)</option>
+                                    }
+                                </select>
+                                <ValidationMessage For="@(() => SelectedClientId)" class="text-danger" />
+                            </div>
+
+                            <!-- Seleccionar Administrador -->
+                            <div class="mb-3">
+                                <label for="admin" class="form-label">Administrador (MOBS)</label>
+                                <select id="admin" class="form-select" @bind="SelectedAdminId">
+                                    <option value="">Seleccione un Administrador</option>
+                                    @foreach (var user in Admins)
+                                    {
+                                        <option value="@user.Id">@user.UserName (@user.Email)</option>
+                                    }
+                                </select>
+                                <ValidationMessage For="@(() => SelectedAdminId)" class="text-danger" />
+                            </div>
+
+                            <!-- Botones -->
+                            <div class="d-flex justify-content-end gap-2 mt-4">
+                                <button type="submit" class="btn btn-primary">Guardar Proyecto</button>
+                                <button type="button" class="btn btn-outline-secondary" @onclick="Cancel">Cancelar</button>
+                            </div>
+                        </EditForm>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@code {
+    private Project NewProject = new Project();
+    private List<ApplicationUser> Clients = new();
+    private List<ApplicationUser> Admins = new();
+    private string SelectedClientId;
+    private string SelectedAdminId;
+
+    protected override async Task OnInitializedAsync()
+    {
+        // Cargar clientes y administradores (incluyendo MOBS)
+        Clients = await UserService.GetUsersByRoleAsync("Cliente");
+        Admins = await UserService.GetUsersByRoleAsync("Admin");
+
+        // Agregar usuarios con rol "MOBS" a la lista de administradores
+        var mobsUsers = await UserService.GetUsersByRoleAsync("MOBS");
+        Admins.AddRange(mobsUsers);
+    }
+
+    private async Task HandleValidSubmit()
+    {
+        if (string.IsNullOrEmpty(SelectedClientId) || string.IsNullOrEmpty(SelectedAdminId))
+        {
+            return; // Validación: No se puede guardar sin Cliente/Admin
+        }
+
+        await ProjectService.AddProjectAsync(NewProject, SelectedClientId, SelectedAdminId);
+        Navigation.NavigateTo("/projects");
+    }
+
+    private void Cancel()
+    {
+        Navigation.NavigateTo("/projects");
+    }
+}

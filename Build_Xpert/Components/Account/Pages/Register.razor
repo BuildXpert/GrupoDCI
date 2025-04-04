@@ -36,9 +36,9 @@
 
                 <!-- Nombre Completo -->
                 <div class="form-floating mb-3">
-                    <InputText @bind-Value="Input.FullName" id="Input.FullName" class="form-control" placeholder="Nombre Completo" />
-                    <label for="Input.FullName">Nombre Completo</label>
-                    <ValidationMessage For="() => Input.FullName" class="text-danger" />
+                    <InputText @bind-Value="Input.UserName" id="Input.UserName" class="form-control" placeholder="Nombre Completo" />
+                    <label for="Input.UserName">Nombre Completo</label>
+                    <ValidationMessage For="() => Input.UserName" class="text-danger" />
                 </div>
 
                 <!-- Teléfono -->
@@ -85,7 +85,7 @@
     private IEnumerable<IdentityError>? identityErrors;
 
     [SupplyParameterFromForm]
-    private InputModel Input { get; set; } = new();
+    private RegisterUser Input { get; set; } = new();
 
     [SupplyParameterFromQuery]
     private string? ReturnUrl { get; set; }
@@ -97,7 +97,7 @@
         var user = CreateUser();
 
         // Asignar el nombre completo como UserName en Identity
-        await UserStore.SetUserNameAsync(user, Input.FullName, CancellationToken.None);
+        await UserStore.SetUserNameAsync(user, Input.Email, CancellationToken.None);
 
         var emailStore = GetEmailStore();
         await emailStore.SetEmailAsync(user, Input.Email, CancellationToken.None);
@@ -163,31 +163,4 @@
         return (IUserEmailStore<ApplicationUser>)UserStore;
     }
 
-    private sealed class InputModel
-    {
-        [Required]
-        [Display(Name = "Nombre Completo")]
-        public string FullName { get; set; } = "";
-
-        [Required]
-        [Phone]
-        [Display(Name = "Teléfono")]
-        public string PhoneNumber { get; set; } = "";
-
-        [Required]
-        [EmailAddress]
-        [Display(Name = "Email")]
-        public string Email { get; set; } = "";
-
-        [Required]
-        [StringLength(100, ErrorMessage = "La contraseña debe tener entre {2} y {1} caracteres.", MinimumLength = 6)]
-        [DataType(DataType.Password)]
-        [Display(Name = "Contraseña")]
-        public string Password { get; set; } = "";
-
-        [DataType(DataType.Password)]
-        [Display(Name = "Confirmar contraseña")]
-        [Compare("Password", ErrorMessage = "Las contraseñas no coinciden.")]
-        public string ConfirmPassword { get; set; } = "";
-    }
 }

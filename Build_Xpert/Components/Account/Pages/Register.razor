@@ -1,0 +1,166 @@
+﻿@page "/Account/Register"
+
+@using System.ComponentModel.DataAnnotations
+@using System.Text
+@using System.Text.Encodings.Web
+@using Microsoft.AspNetCore.Identity
+@using Microsoft.AspNetCore.WebUtilities
+@using Build_Xpert.Model
+
+@inject UserManager<ApplicationUser> UserManager
+@inject IUserStore<ApplicationUser> UserStore
+@inject SignInManager<ApplicationUser> SignInManager
+@inject IEmailSender<ApplicationUser> EmailSender
+@inject ILogger<Register> Logger
+@inject NavigationManager NavigationManager
+@inject IdentityRedirectManager RedirectManager
+
+<PageTitle>Registrarse</PageTitle>
+
+<div class="container-fluid vh-100 d-flex justify-content-center align-items-center" style="background-color: #222831;">
+    <div class="row w-75 shadow-lg rounded" style="background-color: #ffffff;">
+        <!-- Imagen de fondo (oculta en móviles) -->
+        <div class="col-md-6 d-none d-md-block p-0">
+            <img src="https://i.ibb.co/qM8FQCzG/Grupo-DCI-Logo.jpg" alt="Login Image" class="img-fluid rounded-start" style="height: 100%; object-fit: cover;">
+        </div>
+
+        <!-- Formulario de Registro -->
+        <div class="col-md-6 p-5">
+            <h2 class="text-center mb-4 text-dark">Crear Cuenta</h2>
+
+            <StatusMessage Message="@Message" />
+
+            <EditForm Model="Input" method="post" OnValidSubmit="RegisterUser" FormName="registerForm">
+                <DataAnnotationsValidator />
+                <ValidationSummary class="text-danger" role="alert" />
+
+                <!-- Nombre Completo -->
+                <div class="form-floating mb-3">
+                    <InputText @bind-Value="Input.UserName" id="Input.UserName" class="form-control" placeholder="Nombre Completo" />
+                    <label for="Input.UserName">Nombre Completo</label>
+                    <ValidationMessage For="() => Input.UserName" class="text-danger" />
+                </div>
+
+                <!-- Teléfono -->
+                <div class="form-floating mb-3">
+                    <InputText @bind-Value="Input.PhoneNumber" id="Input.PhoneNumber" class="form-control" placeholder="Teléfono" />
+                    <label for="Input.PhoneNumber">Teléfono</label>
+                    <ValidationMessage For="() => Input.PhoneNumber" class="text-danger" />
+                </div>
+
+                <!-- Correo Electrónico -->
+                <div class="form-floating mb-3">
+                    <InputText @bind-Value="Input.Email" id="Input.Email" class="form-control" autocomplete="username" placeholder="Correo electrónico" />
+                    <label for="Input.Email">Correo Electrónico</label>
+                    <ValidationMessage For="() => Input.Email" class="text-danger" />
+                </div>
+
+                <!-- Contraseña -->
+                <div class="form-floating mb-3">
+                    <InputText type="password" @bind-Value="Input.Password" id="Input.Password" class="form-control" autocomplete="new-password" placeholder="Contraseña" />
+                    <label for="Input.Password">Contraseña</label>
+                    <ValidationMessage For="() => Input.Password" class="text-danger" />
+                </div>
+
+                <!-- Confirmar Contraseña -->
+                <div class="form-floating mb-3">
+                    <InputText type="password" @bind-Value="Input.ConfirmPassword" id="Input.ConfirmPassword" class="form-control" autocomplete="new-password" placeholder="Confirmar Contraseña" />
+                    <label for="Input.ConfirmPassword">Confirmar Contraseña</label>
+                    <ValidationMessage For="() => Input.ConfirmPassword" class="text-danger" />
+                </div>
+
+                <button type="submit" class="btn btn-dark btn-lg w-100">
+                    <i class="fas fa-user-plus"></i> Registrarse
+                </button>
+
+                <div class="text-center mt-3">
+                    <p>¿Ya tienes una cuenta? <a href="/Account/Login" class="text-decoration-none">Iniciar Sesión</a></p>
+                </div>
+            </EditForm>
+        </div>
+    </div>
+</div>
+
+@code {
+    private IEnumerable<IdentityError>? identityErrors;
+
+    [SupplyParameterFromForm]
+    private RegisterUser Input { get; set; } = new();
+
+    [SupplyParameterFromQuery]
+    private string? ReturnUrl { get; set; }
+
+    private string? Message => identityErrors is null ? null : $"Error: {string.Join(", ", identityErrors.Select(error => error.Description))}";
+
+    public async Task RegisterUser(EditContext editContext)
+    {
+        var user = CreateUser();
+
+        // Asignar el nombre completo como UserName en Identity
+        await UserStore.SetUserNameAsync(user, Input.Email, CancellationToken.None);
+
+        var emailStore = GetEmailStore();
+        await emailStore.SetEmailAsync(user, Input.Email, CancellationToken.None);
+
+        // Guardar Nombre y Teléfono en Identity
+        user.PhoneNumber = Input.PhoneNumber;
+
+        var result = await UserManager.CreateAsync(user, Input.Password);
+
+        if (!result.Succeeded)
+        {
+            identityErrors = result.Errors;
+            return;
+        }
+
+        Logger.LogInformation("Usuario registrado correctamente.");
+
+        // 🔥 ASIGNAR ROL "Cliente" AUTOMÁTICAMENTE 🔥
+        if (!await UserManager.IsInRoleAsync(user, "Cliente"))
+        {
+            await UserManager.AddToRoleAsync(user, "Cliente");
+        }
+
+        // Confirmación de email
+        var userId = await UserManager.GetUserIdAsync(user);
+        var code = await UserManager.GenerateEmailConfirmationTokenAsync(user);
+        code = WebEncoders.Base64UrlEncode(Encoding.UTF8.GetBytes(code));
+        var callbackUrl = NavigationManager.GetUriWithQueryParameters(
+            NavigationManager.ToAbsoluteUri("Account/ConfirmEmail").AbsoluteUri,
+            new Dictionary<string, object?> { ["userId"] = userId, ["code"] = code, ["returnUrl"] = ReturnUrl });
+
+        await EmailSender.SendConfirmationLinkAsync(user, Input.Email, HtmlEncoder.Default.Encode(callbackUrl));
+
+        if (UserManager.Options.SignIn.RequireConfirmedAccount)
+        {
+            RedirectManager.RedirectTo(
+                "Account/RegisterConfirmation",
+                new() { ["email"] = Input.Email, ["returnUrl"] = ReturnUrl });
+        }
+
+        await SignInManager.SignInAsync(user, isPersistent: false);
+        RedirectManager.RedirectTo(ReturnUrl);
+    }
+
+    private ApplicationUser CreateUser()
+    {
+        try
+        {
+            return new ApplicationUser();
+        }
+        catch
+        {
+            throw new InvalidOperationException($"No se pudo crear una instancia de '{nameof(ApplicationUser)}'.");
+        }
+    }
+
+    private IUserEmailStore<ApplicationUser> GetEmailStore()
+    {
+        if (!UserManager.SupportsUserEmail)
+        {
+            throw new NotSupportedException("El sistema requiere un UserStore que soporte emails.");
+        }
+        return (IUserEmailStore<ApplicationUser>)UserStore;
+    }
+
+}

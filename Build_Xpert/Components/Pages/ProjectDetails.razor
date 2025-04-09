@@ -2,6 +2,7 @@
 @using Microsoft.AspNetCore.Identity
 @using Build_Xpert.Model
 @using Build_Xpert.Services
+@using Microsoft.AspNetCore.Identity
 @inject ProjectService ProjectService
 @inject UserService UserService
 @inject UserManager<ApplicationUser> UserManager
@@ -50,18 +51,41 @@
         height: 100%;
     }
 
-    .media-placeholder {
-        height: 150px;
-        overflow: hidden;
-        display: flex;
-        align-items: center;
-        justify-content: center;
+    /* Estilos para las pestañas */
+    .nav-tabs .nav-link {
+        color: #495057;
+        font-weight: 500;
     }
 
-    .media-content {
-        max-width: 100%;
-        max-height: 100%;
-        object-fit: cover;
+        .nav-tabs .nav-link.active {
+            font-weight: 600;
+            border-bottom: 3px solid #0d6efd;
+        }
+
+    .tab-content {
+        padding: 20px 0;
+    }
+
+    /* Estilos para las pestañas de fases */
+    .phase-tabs .nav-link {
+        font-size: 0.9rem;
+        padding: 0.5rem 1rem;
+    }
+
+        .phase-tabs .nav-link.active {
+            font-weight: 600;
+            border-bottom: 3px solid #0d6efd;
+            background-color: #f8f9fa;
+        }
+
+    .phase-badge {
+        font-size: 0.75rem;
+        margin-left: 5px;
+    }
+
+    .phase-progress {
+        height: 5px;
+        margin-top: 5px;
     }
 </style>
 
@@ -92,7 +116,7 @@
                     <p><strong>Cliente:</strong> @client.UserName (<a href="mailto:@client.Email">@client.Email</a>)</p>
                     <p><strong>Administrador:</strong> @admin.UserName (<a href="mailto:@admin.Email">@admin.Email</a>)</p>
 
-                    <!-- Barra de progreso -->
+                    <!-- Barra de progreso general -->
                     <div class="progress mt-4">
                         <div class="progress-bar progress-bar-striped progress-bar-animated bg-success"
                              role="progressbar"
@@ -107,95 +131,318 @@
                     <div class="mt-4 d-flex align-items-center">
                         @if (isAdmin)
                         {
-                            <button class="btn btn-outline-primary btn-fixed-size" @onclick="EditProject">
+                            <button class="btn btn-outline-primary btn-fixed-size" @onclick="OpenEditProjectModal">
                                 Editar Proyecto
                             </button>
                         }
                         <button class="btn btn-outline-secondary btn-fixed-size ms-2" @onclick="GoBack">
                             Volver
                         </button>
-                        <a href="/Inventario/@project.Id" class="btn btn-primary ms-2">Ver Inventario</a>
+                        <a href="/Inventario" class="btn btn-primary ms-2">Ver Inventario</a>
                     </div>
-
                 </div>
             </div>
 
-            <!-- Sección combinada: Carrusel y Ficha Técnica -->
-            <h4 class="mt-5">Detalles de la Casa</h4>
-            <div class="card shadow-lg p-4 mt-3">
-                <div class="row">
-                    <!-- Carrusel de imágenes -->
-                    <div class="col-md-6">
-                        <div id="houseSectionsCarousel" class="carousel slide" data-bs-ride="carousel">
-                            <div class="carousel-indicators">
-                                @for (int i = 0; i < houseImages.Count; i++)
-                                {
-                                    <button type="button" data-bs-target="#houseSectionsCarousel" data-bs-slide-to="@i" class="@(i == 0 ? "active" : "")" aria-label="Slide @(i + 1)"></button>
-                                }
-                            </div>
+            <!-- Pestañas de navegación -->
+            <ul class="nav nav-tabs mt-4" id="projectTabs" role="tablist">
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link active" id="details-tab" data-bs-toggle="tab" data-bs-target="#details" type="button" role="tab" aria-controls="details" aria-selected="true">
+                        Detalles
+                    </button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link" id="tasks-tab" data-bs-toggle="tab" data-bs-target="#tasks" type="button" role="tab" aria-controls="tasks" aria-selected="false">
+                        Tareas
+                    </button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link" id="files-tab" data-bs-toggle="tab" data-bs-target="#files" type="button" role="tab" aria-controls="files" aria-selected="false">
+                        Archivos
+                    </button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link" id="media-tab" data-bs-toggle="tab" data-bs-target="#media" type="button" role="tab" aria-controls="media" aria-selected="false">
+                        Media
+                    </button>
+                </li>
+            </ul>
 
-                            <div class="carousel-inner">
-                                @for (int i = 0; i < houseImages.Count; i++)
-                                {
-                                    <div class="carousel-item @(i == 0 ? "active" : "")">
-                                        <img src="@houseImages[i]" class="d-block w-100" alt="Sección de la casa @(i + 1)">
+            <!-- Contenido de las pestañas -->
+            <div class="tab-content" id="projectTabsContent">
+                <!-- Pestaña de Detalles -->
+                <div class="tab-pane fade show active" id="details" role="tabpanel" aria-labelledby="details-tab">
+                    <!-- Sección combinada: Carrusel y Ficha Técnica -->
+                    <div class="card shadow-lg p-4 mt-3">
+                        <div class="row">
+                            <!-- Carrusel de imágenes -->
+                            <div class="col-md-6">
+                                <div id="houseSectionsCarousel" class="carousel slide" data-bs-ride="carousel">
+                                    <div class="carousel-indicators">
+                                        @for (int i = 0; i < houseImages.Count; i++)
+                                        {
+                                            <button type="button" data-bs-target="#houseSectionsCarousel" data-bs-slide-to="@i" class="@(i == 0 ? "active" : "")" aria-label="Slide @(i + 1)"></button>
+                                        }
                                     </div>
-                                }
+
+                                    <div class="carousel-inner">
+                                        @for (int i = 0; i < houseImages.Count; i++)
+                                        {
+                                            <div class="carousel-item @(i == 0 ? "active" : "")">
+                                                <img src="@houseImages[i]" class="d-block w-100" alt="Sección de la casa @(i + 1)">
+                                            </div>
+                                        }
+                                    </div>
+
+                                    <button class="carousel-control-prev" type="button" data-bs-target="#houseSectionsCarousel" data-bs-slide="prev">
+                                        <span class="carousel-control-prev-icon" aria-hidden="true"></span>
+                                        <span class="visually-hidden">Anterior</span>
+                                    </button>
+                                    <button class="carousel-control-next" type="button" data-bs-target="#houseSectionsCarousel" data-bs-slide="next">
+                                        <span class="carousel-control-next-icon" aria-hidden="true"></span>
+                                        <span class="visually-hidden">Siguiente</span>
+                                    </button>
+                                </div>
                             </div>
 
-                            <button class="carousel-control-prev" type="button" data-bs-target="#houseSectionsCarousel" data-bs-slide="prev">
-                                <span class="carousel-control-prev-icon" aria-hidden="true"></span>
-                                <span class="visually-hidden">Anterior</span>
-                            </button>
-                            <button class="carousel-control-next" type="button" data-bs-target="#houseSectionsCarousel" data-bs-slide="next">
-                                <span class="carousel-control-next-icon" aria-hidden="true"></span>
-                                <span class="visually-hidden">Siguiente</span>
-                            </button>
+                            <!-- Ficha Técnica -->
+                            <div class="col-md-6">
+                                <div class="ficha-tecnica h-100">
+                                    <h5>Ficha Técnica</h5>
+                                    <table class="table table-striped">
+                                        <tbody>
+                                            <tr>
+                                                <td><strong>🏠 Tipo de Construcción:</strong></td>
+                                                <td>@project.ConstructionType</td>
+                                            </tr>
+                                            <tr>
+                                                <td><strong>📍 Ubicación:</strong></td>
+                                                <td>@($"{project.Province}, {project.Canton}")</td>
+                                            </tr>
+                                            <tr>
+                                                <td><strong>📏 Área Total:</strong></td>
+                                                <td>@(project.LandSize + project.ConstructionSize) m²</td>
+                                            </tr>
+                                            <tr>
+                                                <td><strong>🛏 Habitaciones:</strong></td>
+                                                <td>@project.Bedrooms</td>
+                                            </tr>
+                                            <tr>
+                                                <td><strong>🚿 Baños:</strong></td>
+                                                <td>@project.Bathrooms</td>
+                                            </tr>
+                                            <tr>
+                                                <td><strong>🚗 Garaje:</strong></td>
+                                                <td>@(project.HasGarage ? $"Sí, capacidad para {project.GarageCapacity} vehículos" : "No")</td>
+                                            </tr>
+                                            <tr>
+                                                <td><strong>🏢 Plantas:</strong></td>
+                                                <td>@project.Floors</td>
+                                            </tr>
+                                            <tr>
+                                                <td><strong>💰 Precio:</strong></td>
+                                                <td>@($"{project.Price:C}")</td>
+                                            </tr>
+                                            <tr>
+                                                <td><strong>🏡 ¿En condominio?</strong></td>
+                                                <td>@(project.IsCondominium ? "Sí" : "No")</td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
                         </div>
                     </div>
+                </div>
 
-                    <!-- Ficha Técnica -->
-                    <div class="col-md-6">
-                        <div class="ficha-tecnica h-100">
-                            <h5>Ficha Técnica</h5>
-                            <table class="table table-striped">
+                <!-- Pestaña de Tareas (organizada por fases fijas) -->
+                <div class="tab-pane fade" id="tasks" role="tabpanel" aria-labelledby="tasks-tab">
+                    @if (isAdmin)
+                    {
+                        <div class="mb-3">
+                            <button class="btn btn-success btn-fixed-size mt-2" @onclick="OpenAddTaskModal">Agregar Tarea</button>
+                        </div>
+                    }
+
+                    @if (project.Tasks == null || project.Tasks.Count == 0)
+                    {
+                        <p class="text-muted">No hay tareas asignadas.</p>
+                    }
+                    else
+                    {
+                        <!-- Pestañas de fases fijas -->
+                        <ul class="nav nav-tabs phase-tabs" id="phaseTabs" role="tablist">
+                            @foreach (var phase in ConstructionPhases)
+                            {
+                                <li class="nav-item" role="presentation">
+                                    <button class="nav-link @(phase == ConstructionPhases.First() ? "active" : "")"
+                                            id="@($"tab-{phase}")"
+                                            data-bs-toggle="tab"
+                                            data-bs-target="@($"#phase-{phase}")"
+                                            type="button"
+                                            role="tab"
+                                            aria-controls="@($"phase-{phase}")"
+                                            aria-selected="@(phase == ConstructionPhases.First() ? "true" : "false")">
+                                        @phase
+                                        <span class="badge bg-primary phase-badge">@GetTasksForPhase(phase).Count</span>
+                                    </button>
+                                </li>
+                            }
+                        </ul>
+
+                        <!-- Contenido de las pestañas de fases -->
+                        <div class="tab-content border border-top-0 p-3" id="phaseTabsContent">
+                            @foreach (var phase in ConstructionPhases)
+                            {
+                                var phaseTasks = GetTasksForPhase(phase);
+                                var phaseProgress = GetPhaseProgress(phase);
+
+                                <div class="tab-pane fade @(phase == ConstructionPhases.First() ? "show active" : "")"
+                                     id="@($"phase-{phase}")"
+                                     role="tabpanel"
+                                     aria-labelledby="@($"tab-{phase}")">
+
+                                    <!-- Barra de progreso de la fase -->
+                                    <div class="mb-3">
+                                        <small class="text-muted">Progreso de la fase: @phaseProgress.ToString("0")%</small>
+                                        <div class="progress phase-progress">
+                                            <div class="progress-bar @GetProgressBarClass(phaseProgress)"
+                                                 role="progressbar"
+                                                 style="width: @phaseProgress%;"
+                                                 aria-valuenow="@phaseProgress"
+                                                 aria-valuemin="0"
+                                                 aria-valuemax="100"></div>
+                                        </div>
+                                    </div>
+
+                                    @if (phaseTasks.Count == 0)
+                                    {
+                                        <p class="text-muted">No hay tareas en esta fase.</p>
+                                    }
+                                    else
+                                    {
+                                        <div class="table-responsive">
+                                            <table class="table table-bordered table-hover">
+                                                <thead class="table-dark">
+                                                    <tr>
+                                                        <th>#</th>
+                                                        <th>Nombre de la Tarea</th>
+                                                        <th>Estado</th>
+                                                        @if (isAdmin)
+                                                        {
+                                                            <th class="text-center">Acciones</th>
+                                                        }
+                                                    </tr>
+                                                </thead>
+                                                <tbody>
+                                                    @for (int i = 0; i < phaseTasks.Count; i++)
+                                                    {
+                                                        var task = phaseTasks[i];
+                                                        <tr>
+                                                            <td>@(i + 1)</td>
+                                                            <td>@task.Title</td>
+                                                            <td>
+                                                                <span class="badge @(task.IsCompleted ? "bg-success" : "bg-warning text-dark")">
+                                                                    @(task.IsCompleted ? "Completada" : "Pendiente")
+                                                                </span>
+                                                            </td>
+                                                            @if (isAdmin)
+                                                            {
+                                                                <td class="text-center">
+                                                                    <button class="btn btn-sm btn-outline-info btn-sm-fixed-size" @onclick="() => OpenTaskModal(task)">
+                                                                        Ver Detalles
+                                                                    </button>
+                                                                    <button class="btn btn-sm btn-outline-primary btn-sm-fixed-size" @onclick="() => OpenEditTaskModal(task)">
+                                                                        Editar
+                                                                    </button>
+                                                                    <button class="btn btn-sm @(task.IsCompleted ? "btn-warning" : "btn-success") btn-sm-fixed-size"
+                                                                            @onclick="() => ToggleTaskCompletion(task.Id)">
+                                                                        @(task.IsCompleted ? "Reabrir" : "Completar")
+                                                                    </button>
+                                                                    <button class="btn btn-sm btn-outline-danger btn-sm-fixed-size ms-2" @onclick="() => DeleteTask(task.Id)">
+                                                                        Eliminar
+                                                                    </button>
+                                                                </td>
+                                                            }
+                                                        </tr>
+                                                    }
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                    }
+                                </div>
+                            }
+                        </div>
+                    }
+                </div>
+
+                <!-- Pestaña de Archivos -->
+                <div class="tab-pane fade" id="files" role="tabpanel" aria-labelledby="files-tab">
+                    <div class="card shadow-lg p-4">
+                        <div class="card-body">
+                            <h5 class="card-title">Subir Archivos</h5>
+                            <input type="file" class="form-control">
+                            <button class="btn btn-outline-success mt-2">Subir Archivo</button>
+
+                            <h6 class="mt-4">📄 Archivos Subidos</h6>
+                            <table class="table table-bordered table-hover text-center">
+                                <thead class="table-dark">
+                                    <tr>
+                                        <th>📄 Nombre</th>
+                                        <th>📅 Fecha</th>
+                                        <th>👤 Usuario</th>
+                                        <th>📁 Extensión</th>
+                                        <th class="text-center">⚙️ Acciones</th>
+                                    </tr>
+                                </thead>
                                 <tbody>
                                     <tr>
-                                        <td><strong>🏠 Tipo de Construcción:</strong></td>
-                                        <td>@project.ConstructionType</td>
+                                        <td>Documento_ejemplo.pdf</td>
+                                        <td>14/03/2025</td>
+                                        <td>Juan Pérez</td>
+                                        <td>PDF</td>
+                                        <td class="text-center">
+                                            <button class="btn btn-sm btn-outline-info" data-bs-toggle="modal" data-bs-target="#modalDetalles">🔍 Ver</button>
+                                            <button class="btn btn-sm btn-outline-danger">🗑️ Eliminar</button>
+                                        </td>
                                     </tr>
+                                    <!-- Más archivos... -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Pestaña de Media -->
+                <div class="tab-pane fade" id="media" role="tabpanel" aria-labelledby="media-tab">
+                    <div class="card shadow-lg p-4">
+                        <div class="card-body">
+                            <h5 class="card-title">Subir Media</h5>
+                            <input type="file" class="form-control" accept="image/*, video/*">
+                            <button class="btn btn-outline-success mt-3 btn-fixed-size">Subir Media</button>
+
+                            <h6 class="mt-4">📸 Media Subida</h6>
+                            <table class="table table-bordered table-hover text-center">
+                                <thead class="table-dark">
                                     <tr>
-                                        <td><strong>📍 Ubicación:</strong></td>
-                                        <td>@($"{project.Province}, {project.Canton}")</td>
+                                        <th>📂 Nombre del Archivo</th>
+                                        <th>📅 Fecha de Subida</th>
+                                        <th>👤 Subido por</th>
+                                        <th>📁 Extensión</th>
+                                        <th class="text-center">⚙️ Acciones</th>
                                     </tr>
+                                </thead>
+                                <tbody>
                                     <tr>
-                                        <td><strong>📏 Área Total:</strong></td>
-                                        <td>@(project.LandSize + project.ConstructionSize) m²</td>
+                                        <td>📸 Foto_obra.jpg</td>
+                                        <td>12/03/2025</td>
+                                        <td>Pedro Gómez</td>
+                                        <td>JPG</td>
+                                        <td class="text-center">
+                                            <button class="btn btn-sm btn-outline-info">🔍 Ver</button>
+                                            <button class="btn btn-sm btn-outline-danger">🗑️ Eliminar</button>
+                                        </td>
                                     </tr>
-                                    <tr>
-                                        <td><strong>🛏 Habitaciones:</strong></td>
-                                        <td>@project.Bedrooms</td>
-                                    </tr>
-                                    <tr>
-                                        <td><strong>🚿 Baños:</strong></td>
-                                        <td>@project.Bathrooms</td>
-                                    </tr>
-                                    <tr>
-                                        <td><strong>🚗 Garaje:</strong></td>
-                                        <td>@(project.HasGarage ? $"Sí, capacidad para {project.GarageCapacity} vehículos" : "No")</td>
-                                    </tr>
-                                    <tr>
-                                        <td><strong>🏢 Plantas:</strong></td>
-                                        <td>@project.Floors</td>
-                                    </tr>
-                                    <tr>
-                                        <td><strong>💰 Precio:</strong></td>
-                                        <td>@($"{project.Price:C}")</td>
-                                    </tr>
-                                    <tr>
-                                        <td><strong>🏡 ¿En condominio?</strong></td>
-                                        <td>@(project.IsCondominium ? "Sí" : "No")</td>
-                                    </tr>
+                                    <!-- Más media... -->
                                 </tbody>
                             </table>
                         </div>
@@ -203,74 +450,40 @@
                 </div>
             </div>
 
-            <!-- Tareas Asociadas -->
-            <h4 class="mt-5">Tareas Asociadas</h4>
-
-            @if (isAdmin)
+            <!-- Modales (se mantienen igual) -->
+            @if (showEditProjectModal)
             {
-                <div class="mb-3">
-                    <button class="btn btn-success btn-fixed-size mt-2" @onclick="OpenAddTaskModal">Agregar Tarea</button>
+                <!-- Modal para Editar Proyecto -->
+                <div class="modal fade show d-block" tabindex="-1" role="dialog">
+                    <div class="modal-dialog" role="document">
+                        <div class="modal-content">
+                            <div class="modal-header">
+                                <h5 class="modal-title">Editar Proyecto</h5>
+                                <button type="button" class="btn-close" @onclick="CloseEditProjectModal"></button>
+                            </div>
+                            <div class="modal-body">
+                                <div class="mb-3">
+                                    <label for="editProjectName" class="form-label">Nombre del Proyecto</label>
+                                    <input type="text" class="form-control" id="editProjectName" @bind="editProjectName">
+                                </div>
+                                <div class="mb-3">
+                                    <label for="editProjectDescription" class="form-label">Descripción</label>
+                                    <textarea class="form-control" id="editProjectDescription" @bind="editProjectDescription"></textarea>
+                                </div>
+                            </div>
+                            <div class="modal-footer">
+                                <button class="btn btn-secondary" @onclick="CloseEditProjectModal">Cancelar</button>
+                                <button class="btn btn-primary" @onclick="SaveProjectChanges">Guardar Cambios</button>
+                            </div>
+                        </div>
+                    </div>
                 </div>
+                <div class="modal-backdrop fade show"></div>
             }
 
-            @if (project.Tasks == null || project.Tasks.Count == 0)
-            {
-                <p class="text-muted">No hay tareas asignadas.</p>
-            }
-            else
-            {
-                <div class="table-responsive mt-3">
-                    <table class="table table-bordered table-hover">
-                        <thead class="table-dark">
-                            <tr>
-                                <th>#</th>
-                                <th>Nombre de la Tarea</th>
-                                <th>Estado</th>
-                                @if (isAdmin)
-                                {
-                                    <th class="text-center">Acciones</th>
-                                }
-                            </tr>
-                        </thead>
-                        <tbody>
-                            @foreach (var task in project.Tasks.Select((t, index) => new { Task = t, Index = index + 1 }))
-                            {
-                                <tr>
-                                    <td>@task.Index</td>
-                                    <td>@task.Task.Title</td>
-                                    <td>
-                                        <span class="badge @(task.Task.IsCompleted ? "bg-success" : "bg-warning text-dark")">
-                                            @(task.Task.IsCompleted ? "Completada" : " Pendiente ")
-                                        </span>
-                                    </td>
-                                    @if (isAdmin)
-                                    {
-                                        <td class="text-center">
-                                            <button class="btn btn-sm btn-outline-info btn-sm-fixed-size" @onclick="() => OpenTaskModal(task.Task)">
-                                                Ver Detalles
-                                            </button>
-                                            <button class="btn btn-sm btn-outline-primary btn-sm-fixed-size" @onclick="() => EditTask(task.Task.Id)">
-                                                Editar
-                                            </button>
-                                            <button class="btn btn-sm @(task.Task.IsCompleted ? "btn-warning" : "btn-success") btn-sm-fixed-size"
-                                                    @onclick="() => ToggleTaskCompletion(task.Task.Id)">
-                                                @(task.Task.IsCompleted ? "Reabrir" : "Completar")
-                                            </button>
-                                            <button class="btn btn-sm btn-outline-danger btn-sm-fixed-size ms-2" @onclick="() => DeleteTask(task.Task.Id)">
-                                                Eliminar
-                                            </button>
-                                        </td>
-                                    }
-                                </tr>
-                            }
-                        </tbody>
-                    </table>
-                </div>
-            }
-
-            <!-- Modal para agregar una nueva tarea -->
             @if (showAddTaskModal)
             {
+                <!-- Modal para agregar tarea -->
                 <div class="modal fade show d-block" tabindex="-1" role="dialog">
                     <div class="modal-dialog" role="document">
                         <div class="modal-content">
@@ -298,9 +511,9 @@
                 <div class="modal-backdrop fade show"></div>
             }
 
-            <!-- Modal para detalles de la tarea -->
             @if (selectedTask != null)
             {
+                <!-- Modal para detalles de tarea -->
                 <div class="modal fade show d-block" tabindex="-1" role="dialog">
                     <div class="modal-dialog modal-lg" role="document">
                         <div class="modal-content">
@@ -328,79 +541,35 @@
                 <div class="modal-backdrop fade show"></div>
             }
 
-
-            <!-- Manejo de Archivos y Media -->
-            <h4 class="mt-5">Manejo de Archivos y Media</h4>
-            <div class="row">
-                <!-- Columna para Archivos -->
-                <div class="col-md-6">
-                    <div class="card shadow-lg p-4">
-                        <div class="card-body">
-                            <h5 class="card-title">Subir Archivos</h5>
-                            <input type="file" class="form-control">
-                            <button class="btn btn-outline-success mt-3 btn-fixed-size">Subir Archivo</button>
-
-                            <h6 class="mt-4">Archivos Subidos</h6>
-                            <ul class="list-group">
-                                <li class="list-group-item d-flex justify-content-between align-items-center">
-                                    <span>Documento_ejemplo.pdf</span>
-                                    <button class="btn btn-sm btn-outline-danger btn-sm-fixed-size">Eliminar</button>
-                                </li>
-                                <li class="list-group-item d-flex justify-content-between align-items-center">
-                                    <span>Planos_casa.jpg</span>
-                                    <button class="btn btn-sm btn-outline-danger btn-sm-fixed-size">Eliminar</button>
-                                </li>
-                                <li class="list-group-item d-flex justify-content-between align-items-center">
-                                    <span>Contrato_firma.docx</span>
-                                    <button class="btn btn-sm btn-outline-danger btn-sm-fixed-size">Eliminar</button>
-                                </li>
-                            </ul>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Columna para Media -->
-                <div class="col-md-6">
-                    <div class="card shadow-lg p-4">
-                        <div class="card-body">
-                            <h5 class="card-title">Subir Media</h5>
-                            <input type="file" class="form-control" accept="image/*, video/*">
-                            <button class="btn btn-outline-success mt-3 btn-fixed-size">Subir Media</button>
-
-                            <h6 class="mt-4">Media Subida</h6>
-                            <div class="row">
-                                <!-- Ejemplo de imagen -->
-                                <div class="col-md-6 mb-3">
-                                    <div class="card">
-                                        <div class="media-placeholder">
-                                            <img src="https://images.pexels.com/photos/106399/pexels-photo-106399.jpeg" class="media-content" alt="Imagen de ejemplo">
-                                        </div>
-                                        <div class="card-body">
-                                            <button class="btn btn-sm btn-outline-danger w-100">Eliminar</button>
-                                        </div>
-                                    </div>
+            @if (showEditTaskModal)
+            {
+                <!-- Modal para editar tarea -->
+                <div class="modal fade show d-block" tabindex="-1" role="dialog">
+                    <div class="modal-dialog" role="document">
+                        <div class="modal-content">
+                            <div class="modal-header">
+                                <h5 class="modal-title">Editar Tarea</h5>
+                                <button type="button" class="btn-close" @onclick="CloseEditTaskModal"></button>
+                            </div>
+                            <div class="modal-body">
+                                <div class="mb-3">
+                                    <label for="editTaskTitle" class="form-label">Título de la Tarea</label>
+                                    <input type="text" class="form-control" id="editTaskTitle" @bind="editTaskTitle">
                                 </div>
-                                <!-- Ejemplo de video -->
-                                <div class="col-md-6 mb-3">
-                                    <div class="card">
-                                        <div class="media-placeholder">
-                                            <video controls class="media-content">
-                                                <source src="https://www.w3schools.com/html/mov_bbb.mp4" type="video/mp4">
-                                                Tu navegador no soporta videos.
-                                            </video>
-                                        </div>
-                                        <div class="card-body">
-                                            <button class="btn btn-sm btn-outline-danger w-100">Eliminar</button>
-                                        </div>
-                                    </div>
+                                <div class="mb-3">
+                                    <label for="editTaskDescription" class="form-label">Descripción</label>
+                                    <textarea class="form-control" id="editTaskDescription" @bind="editTaskDescription"></textarea>
                                 </div>
+                            </div>
+                            <div class="modal-footer">
+                                <button class="btn btn-secondary" @onclick="CloseEditTaskModal">Cancelar</button>
+                                <button class="btn btn-primary" @onclick="SaveTaskChanges">Guardar Cambios</button>
                             </div>
                         </div>
                     </div>
                 </div>
-            </div>
-
-            
+                <div class="modal-backdrop fade show"></div>
+            }
         }
     </div>
 </div>
@@ -413,31 +582,32 @@
     private string newTaskTitle = "";
     private bool isAdmin = false;
     private bool showAddTaskModal = false;
+    private bool showEditProjectModal = false;
+    private bool showEditTaskModal = false;
     private string newTaskDescription = "";
-
+    private string editProjectName = "";
+    private string editProjectDescription = "";
     private ProjectTask selectedTask = null;
+    private ProjectTask editingTask = new();
+    private string editTaskTitle = "";
+    private string editTaskDescription = "";
 
-    private void OpenAddTaskModal()
+    // Fases fijas de construcción
+    private readonly List<string> ConstructionPhases = new()
     {
-        showAddTaskModal = true;
-    }
+        "Planificación",
+        "Preparación de obra",
+        "Cimentación y estructura",
+        "Acabados",
+        "Inspecciones de calidad"
+    };
 
-    private void CloseAddTaskModal()
+    private List<string> houseImages = new()
     {
-        showAddTaskModal = false;
-        newTaskTitle = "";
-        newTaskDescription = "";
-    }
-
-    private void OpenTaskModal(ProjectTask task)
-    {
-        selectedTask = task;
-    }
-
-    private void CloseTaskModal()
-    {
-        selectedTask = null;
-    }
+        "https://images.pexels.com/photos/106399/pexels-photo-106399.jpeg",
+        "https://images.pexels.com/photos/259588/pexels-photo-259588.jpeg",
+        "https://images.pexels.com/photos/534151/pexels-photo-534151.jpeg"
+    };
 
     protected override async Task OnInitializedAsync()
     {
@@ -463,12 +633,118 @@
         }
     }
 
-    private List<string> houseImages = new()
+    // Métodos para manejar las fases (sin modificar el modelo de tareas)
+    private List<ProjectTask> GetTasksForPhase(string phase)
     {
-        "https://images.pexels.com/photos/106399/pexels-photo-106399.jpeg",
-        "https://images.pexels.com/photos/259588/pexels-photo-259588.jpeg",
-        "https://images.pexels.com/photos/534151/pexels-photo-534151.jpeg"
-    };
+        if (project.Tasks == null) return new List<ProjectTask>();
+
+        // Filtra las tareas según la fase (aquí puedes implementar tu lógica específica)
+        return phase switch
+        {
+            "Planificación" => project.Tasks
+                .Where(t => t.Title.Contains("diseño") ||
+                           t.Title.Contains("plan") ||
+                           t.Description.Contains("planificación"))
+                .ToList(),
+            "Preparación de obra" => project.Tasks
+                .Where(t => t.Title.Contains("permiso") ||
+                           t.Title.Contains("preparación") ||
+                           t.Description.Contains("preparación obra"))
+                .ToList(),
+            "Cimentación y estructura" => project.Tasks
+                .Where(t => t.Title.Contains("cimentación") ||
+                           t.Title.Contains("estructura") ||
+                           t.Description.Contains("hormigón") ||
+                           t.Description.Contains("estructura"))
+                .ToList(),
+            "Acabados" => project.Tasks
+                .Where(t => t.Title.Contains("acabado") ||
+                           t.Title.Contains("pintura") ||
+                           t.Title.Contains("instalación") ||
+                           t.Description.Contains("acabados"))
+                .ToList(),
+            "Inspecciones de calidad" => project.Tasks
+                .Where(t => t.Title.Contains("inspección") ||
+                           t.Title.Contains("calidad") ||
+                           t.Description.Contains("revisión") ||
+                           t.Description.Contains("control calidad"))
+                .ToList(),
+            _ => new List<ProjectTask>()
+        };
+    }
+
+    private double GetPhaseProgress(string phase)
+    {
+        var tasks = GetTasksForPhase(phase);
+        if (tasks.Count == 0) return 0;
+
+        return (double)tasks.Count(t => t.IsCompleted) / tasks.Count * 100;
+    }
+
+    private string GetProgressBarClass(double progress)
+    {
+        return progress switch
+        {
+            >= 80 => "bg-success",
+            >= 50 => "bg-info",
+            >= 30 => "bg-warning",
+            _ => "bg-danger"
+        };
+    }
+
+    // Resto de métodos (se mantienen igual)
+    private int ProgressPercentage => project.Tasks == null || project.Tasks.Count == 0
+        ? 0
+        : (int)((double)project.Tasks.Count(t => t.IsCompleted) / project.Tasks.Count * 100);
+
+    private void OpenAddTaskModal() => showAddTaskModal = true;
+    private void CloseAddTaskModal() => showAddTaskModal = false;
+
+    private void OpenEditProjectModal()
+    {
+        editProjectName = project.Name;
+        editProjectDescription = project.Description;
+        showEditProjectModal = true;
+    }
+
+    private void CloseEditProjectModal() => showEditProjectModal = false;
+
+    private async Task SaveProjectChanges()
+    {
+        if (!string.IsNullOrWhiteSpace(editProjectName))
+        {
+            project.Name = editProjectName;
+            project.Description = editProjectDescription;
+            await ProjectService.UpdateProjectAsync(project);
+            await RefreshProject();
+            CloseEditProjectModal();
+        }
+    }
+
+    private void OpenEditTaskModal(ProjectTask task)
+    {
+        editingTask = task;
+        editTaskTitle = task.Title;
+        editTaskDescription = task.Description;
+        showEditTaskModal = true;
+    }
+
+    private void CloseEditTaskModal() => showEditTaskModal = false;
+
+    private async Task SaveTaskChanges()
+    {
+        if (!string.IsNullOrWhiteSpace(editTaskTitle))
+        {
+            editingTask.Title = editTaskTitle;
+            editingTask.Description = editTaskDescription;
+            await ProjectService.UpdateTaskAsync(editingTask);
+            await RefreshProject();
+            CloseEditTaskModal();
+        }
+    }
+
+    private void OpenTaskModal(ProjectTask task) => selectedTask = task;
+    private void CloseTaskModal() => selectedTask = null;
 
     private async Task AddTask()
     {
@@ -477,13 +753,12 @@
             var newTask = new ProjectTask
                 {
                     Title = newTaskTitle,
-                    Description = newTaskDescription, 
+                    Description = newTaskDescription,
                     ProjectId = project.Id
                 };
 
             await ProjectService.AddTaskToProjectAsync(project.Id, newTask);
-            await RefreshProject(); 
-
+            await RefreshProject();
             CloseAddTaskModal();
         }
     }
@@ -503,7 +778,6 @@
     private async Task RefreshProject()
     {
         project = await ProjectService.GetProjectByIdAsync(Id);
-
         if (project != null)
         {
             client = await UserService.GetUserByIdAsync(project.ClientId);
@@ -511,22 +785,5 @@
         }
     }
 
-    private void GoBack()
-    {
-        Navigation.NavigateTo("/projects");
-    }
-
-    private void EditProject()
-    {
-        Navigation.NavigateTo($"/edit-project/{project.Id}");
-    }
-
-    private void EditTask(int taskId)
-    {
-        Navigation.NavigateTo($"/edit-task/{taskId}");
-    }
-
-    private int ProgressPercentage => project.Tasks == null || project.Tasks.Count == 0
-        ? 0
-        : (int)((double)project.Tasks.Count(t => t.IsCompleted) / project.Tasks.Count * 100);
-}
+    private void GoBack() => Navigation.NavigateTo("/projects");
+} 

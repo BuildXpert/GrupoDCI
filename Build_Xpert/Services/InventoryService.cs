@@ -1,4 +1,5 @@
-﻿using Build_Xpert.Model;
+﻿using Build_Xpert.Migrations;
+using Build_Xpert.Model;
 using Microsoft.EntityFrameworkCore;
 
 namespace Build_Xpert.Services
@@ -59,8 +60,6 @@ namespace Build_Xpert.Services
             }
         }
 
-
-
         public async Task DeleteAsync(int id)
         {
             var item = await _context.InventoryItems.FindAsync(id);
@@ -69,6 +68,37 @@ namespace Build_Xpert.Services
                 _context.InventoryItems.Remove(item);
                 await _context.SaveChangesAsync();
             }
+        }
+
+        public async Task RegisterInventoryUsage(int projectId, int itemId, int quantityUsed, bool isService = false)
+        {
+            var item = await _context.InventoryItems.FindAsync(itemId);
+
+            if (item == null)
+            {
+                throw new Exception("Item no encontrado");
+            }
+
+            if (item.Stock < quantityUsed)
+            {
+                throw new Exception("Stock insuficiente");
+            }
+
+            var totalSpend = item.Precio * quantityUsed;
+
+            var use = new InventoryItemUsage
+            {
+                InventoryItemId = itemId,
+                ProjectId = projectId,
+                QuantityUsed = quantityUsed,
+                IsService = isService,
+                TotalSpent = totalSpend
+            };
+
+            item.Stock -= quantityUsed;
+
+            _context.InventoryItemUsage.Add(use);
+            await _context.SaveChangesAsync();
         }
     }
 }

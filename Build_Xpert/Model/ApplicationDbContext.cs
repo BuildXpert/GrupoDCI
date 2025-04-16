@@ -8,12 +8,14 @@ namespace Build_Xpert.Model
         public ApplicationDbContext(DbContextOptions<ApplicationDbContext> options) : base(options) { }
 
         public DbSet<Project> Projects { get; set; }
-        public DbSet<ProjectTask> Tasks { get; set; }
+        public DbSet<ProjectPhaseTasks> Tasks { get; set; }
+        public DbSet<ProjectPhase> ProjectPhases { get; set; }
         public DbSet<Property> Properties { get; set; }
         public DbSet<Proveedor> Proveedores { get; set; }
         public DbSet<PagoProveedor> Pagos { get; set; }
         public DbSet<PedidoProveedor> Pedidos { get; set; }
         public DbSet<InventoryItem> InventoryItems { get; set; }
+        public DbSet<InventoryItemUsage> InventoryItemUsage { get; set; }
 
 
         protected override void OnModelCreating(ModelBuilder builder)
@@ -62,6 +64,12 @@ namespace Build_Xpert.Model
                 .WithMany(p => p.Pagos)
                 .HasForeignKey(p => p.ProveedorId)
                 .OnDelete(DeleteBehavior.Cascade);
+
+            builder.Entity<ProjectPhaseTasks>()
+                .Property(p => p.Description)
+                .HasMaxLength(500)
+                .HasColumnType("nvarchar(max)"); // Si esperas un texto largo
+
         }
     }
 }

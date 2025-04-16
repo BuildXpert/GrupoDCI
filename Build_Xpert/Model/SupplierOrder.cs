@@ -4,7 +4,7 @@ using System.ComponentModel.DataAnnotations;
 
 namespace Build_Xpert.Model
 {
-    public class PedidoProveedor
+    public class SupplierOrder
     {
         [Key]
         [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
@@ -12,10 +12,10 @@ namespace Build_Xpert.Model
 
         // Relación con Proveedor
         [Required]
-        public int ProveedorId { get; set; }
+        public int SupplierId { get; set; }
 
-        [ForeignKey("ProveedorId")]
-        public Proveedor Proveedor { get; set; }
+        [ForeignKey("SupplierId")]
+        public Supplier Supplier { get; set; }
 
         // Relación con Proyecto 🔥
         [Required]
@@ -30,20 +30,20 @@ namespace Build_Xpert.Model
 
         [Required(ErrorMessage = "La cantidad es obligatoria.")]
         [Range(1, int.MaxValue, ErrorMessage = "La cantidad debe ser mayor a 0.")]
-        public int Cantidad { get; set; }
+        public int Quantity { get; set; }
 
         [Required(ErrorMessage = "La descripción del pedido es obligatoria.")]
-        public string Descripcion { get; set; }
+        public string Description { get; set; }
 
         [Required]
-        public DateTime FechaPedido { get; set; } = DateTime.UtcNow;
+        public DateTime RequestDate { get; set; } = DateTime.UtcNow;
 
         [Required(ErrorMessage = "El monto del pedido es obligatorio.")]
         [Column(TypeName = "decimal(18,2)")]
-        public decimal Monto { get; set; }
+        public decimal Amount { get; set; }
 
         [Required(ErrorMessage = "El estado del pedido es obligatorio.")]
-        public string Estado { get; set; } = "Pendiente";
+        public string Status { get; set; } = "Pendiente";
 
 
     }

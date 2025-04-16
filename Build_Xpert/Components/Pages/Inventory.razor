@@ -1,9 +1,9 @@
-﻿@page "/Inventario/{projectId:int}"
+﻿@page "/Inventory/{projectId:int}"
 @using Build_Xpert.Model
 @using Build_Xpert.Services
 @inject InventoryService InventoryService
 @inject NavigationManager Navigation
-@inject ProveedorService ProveedorService
+@inject SupplierService ProveedorService
 
 <style>
     .inventario-container {
@@ -96,11 +96,11 @@
                         @foreach (var producto in ProductosFiltrados)
                         {
                             <tr>
-                                <td>@producto.Nombre</td>
-                                <td><span class="badge-categoria">@producto.Categoria</span></td>
+                                <td>@producto.Name</td>
+                                <td><span class="badge-categoria">@producto.Category</span></td>
                                 <td>@producto.Stock</td>
-                                <td>₡@producto.Precio.ToString("N2")</td>
-                                <td>@producto.Proveedor?.Nombre</td>
+                                <td>₡@producto.Price.ToString("N2")</td>
+                                <td>@producto.Supplier?.Name</td>
                                 <td class="text-center">
                                     <button class="btn btn-warning btn-sm me-1" @onclick="() => EditarProducto(producto.Id)">✏️</button>
                                     <button class="btn btn-danger btn-sm me-1" @onclick="() => EliminarProducto(producto.Id)">🗑️</button>
@@ -130,11 +130,11 @@
                         }
                         <div class="mb-3">
                             <label>Nombre</label>
-                            <input class="form-control" @bind="nuevoProducto.Nombre" />
+                            <input class="form-control" @bind="nuevoProducto.Name" />
                         </div>
                         <div class="mb-3">
                             <label>Categoría</label>
-                            <select class="form-control" @bind="nuevoProducto.Categoria">
+                            <select class="form-control" @bind="nuevoProducto.Category">
                                 <option value="">-- Seleccione una categoría --</option>
                                 <option value="Servicio">Servicio</option>
                                 <option value="Material de obra">Material de obra</option>
@@ -146,17 +146,17 @@
                         </div>
                         <div class="mb-3">
                             <label>Proveedor</label>
-                            <select class="form-control" @bind="nuevoProducto.ProveedorId">
+                            <select class="form-control" @bind="nuevoProducto.SupplierId">
                                 <option value="0">-- Selecciona un proveedor --</option>
                                 @foreach (var prov in proveedores)
                                 {
-                                    <option value="@prov.Id">@prov.Nombre</option>
+                                    <option value="@prov.Id">@prov.Name</option>
                                 }
                             </select>
                         </div>
                         <div class="mb-3">
                             <label>Precio</label>
-                            <input type="number" step="0.01" class="form-control" @bind="nuevoProducto.Precio" />
+                            <input type="number" step="0.01" class="form-control" @bind="nuevoProducto.Price" />
                         </div>
                     </div>
                     <div class="modal-footer">
@@ -184,11 +184,11 @@
                         }
                         <div class="mb-3">
                             <label>Nombre</label>
-                            <input class="form-control" @bind="productoEnEdicion.Nombre" />
+                            <input class="form-control" @bind="productoEnEdicion.Name" />
                         </div>
                         <div class="mb-3">
                             <label>Categoría</label>
-                            <select class="form-control" @bind="productoEnEdicion.Categoria">
+                            <select class="form-control" @bind="productoEnEdicion.Category">
                                 <option value="">-- Seleccione una categoría --</option>
                                 <option value="Servicio">Servicio</option>
                                 <option value="Material de obra">Material de obra</option>
@@ -200,17 +200,17 @@
                         </div>
                         <div class="mb-3">
                             <label>Proveedor</label>
-                            <select class="form-control" @bind="productoEnEdicion.ProveedorId">
+                            <select class="form-control" @bind="productoEnEdicion.SupplierId">
                                 <option value="0">-- Selecciona un proveedor --</option>
                                 @foreach (var prov in proveedores)
                                 {
-                                    <option value="@prov.Id">@prov.Nombre</option>
+                                    <option value="@prov.Id">@prov.Name</option>
                                 }
                             </select>
                         </div>
                         <div class="mb-3">
                             <label>Precio</label>
-                            <input type="number" step="0.01" class="form-control" @bind="productoEnEdicion.Precio" />
+                            <input type="number" step="0.01" class="form-control" @bind="productoEnEdicion.Price" />
                         </div>
                     </div>
                     <div class="modal-footer">
@@ -229,7 +229,7 @@
     private List<InventoryItem> productos;
     private InventoryItem nuevoProducto = new();
     private InventoryItem productoEnEdicion = new();
-    private List<Proveedor> proveedores = new();
+    private List<Supplier> proveedores = new();
 
     private string textoBusqueda = "";
     private string categoriaSeleccionada = "Todas";
@@ -242,8 +242,8 @@
 
     private IEnumerable<InventoryItem> ProductosFiltrados =>
         productos
-            .Where(p => (categoriaSeleccionada == "Todas" || p.Categoria == categoriaSeleccionada)
-                && (string.IsNullOrWhiteSpace(textoBusqueda) || p.Nombre.Contains(textoBusqueda, StringComparison.OrdinalIgnoreCase)));
+            .Where(p => (categoriaSeleccionada == "Todas" || p.Category == categoriaSeleccionada)
+                && (string.IsNullOrWhiteSpace(textoBusqueda) || p.Name.Contains(textoBusqueda, StringComparison.OrdinalIgnoreCase)));
 
     protected override async Task OnInitializedAsync()
     {
@@ -262,7 +262,7 @@
 
     private async Task GuardarProducto()
     {
-        if (string.IsNullOrWhiteSpace(nuevoProducto.Nombre) || string.IsNullOrWhiteSpace(nuevoProducto.Categoria) || nuevoProducto.Stock <= 0 || nuevoProducto.Precio <= 0 || nuevoProducto.ProveedorId == 0)
+        if (string.IsNullOrWhiteSpace(nuevoProducto.Name) || string.IsNullOrWhiteSpace(nuevoProducto.Category) || nuevoProducto.Stock <= 0 || nuevoProducto.Price <= 0 || nuevoProducto.SupplierId == 0)
         {
             showValidationError = true;
             return;
@@ -284,11 +284,11 @@
             productoEnEdicion = new InventoryItem
                 {
                     Id = producto.Id,
-                    Nombre = producto.Nombre,
-                    Categoria = producto.Categoria,
+                    Name = producto.Name,
+                    Category = producto.Category,
                     Stock = producto.Stock,
-                    Precio = producto.Precio,
-                    ProveedorId = producto.ProveedorId,
+                    Price = producto.Price,
+                    SupplierId = producto.SupplierId,
                     ProjectId = producto.ProjectId
                 };
             showEditValidationError = false;
@@ -298,7 +298,7 @@
 
     private async Task GuardarCambiosProducto()
     {
-        if (string.IsNullOrWhiteSpace(productoEnEdicion.Nombre) || string.IsNullOrWhiteSpace(productoEnEdicion.Categoria) || productoEnEdicion.Stock <= 0 || productoEnEdicion.Precio <= 0 || productoEnEdicion.ProveedorId == 0)
+        if (string.IsNullOrWhiteSpace(productoEnEdicion.Name) || string.IsNullOrWhiteSpace(productoEnEdicion.Category) || productoEnEdicion.Stock <= 0 || productoEnEdicion.Price <= 0 || productoEnEdicion.SupplierId == 0)
         {
             showEditValidationError = true;
             return;

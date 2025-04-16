@@ -15,7 +15,7 @@ builder.Services.AddRazorComponents()
 builder.Services.AddScoped<ProjectService>();
 builder.Services.AddScoped<UserService>();
 builder.Services.AddScoped<PropertyService>();
-builder.Services.AddScoped<ProveedorService>();
+builder.Services.AddScoped<SupplierService>();
 builder.Services.AddScoped<InventoryService>();
 
 builder.Services.AddCascadingAuthenticationState();

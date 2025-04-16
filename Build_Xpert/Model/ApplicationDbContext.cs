@@ -11,9 +11,9 @@ namespace Build_Xpert.Model
         public DbSet<ProjectPhaseTasks> Tasks { get; set; }
         public DbSet<ProjectPhase> ProjectPhases { get; set; }
         public DbSet<Property> Properties { get; set; }
-        public DbSet<Proveedor> Proveedores { get; set; }
-        public DbSet<PagoProveedor> Pagos { get; set; }
-        public DbSet<PedidoProveedor> Pedidos { get; set; }
+        public DbSet<Supplier> Suppliers { get; set; }
+        public DbSet<SupplierPayment> SupplierPayments { get; set; }
+        public DbSet<SupplierOrder> SupplierOrders { get; set; }
         public DbSet<InventoryItem> InventoryItems { get; set; }
         public DbSet<InventoryItemUsage> InventoryItemUsage { get; set; }
 
@@ -46,23 +46,23 @@ namespace Build_Xpert.Model
                 .HasColumnType("decimal(18, 2)");
 
             // 🔹 Configurar relación entre `PedidoProveedor` y `Proveedor`
-            builder.Entity<PedidoProveedor>()
-                .HasOne(p => p.Proveedor)
-                .WithMany(p => p.Pedidos)
-                .HasForeignKey(p => p.ProveedorId)
+            builder.Entity<SupplierOrder>()
+                .HasOne(p => p.Supplier)
+                .WithMany(p => p.SupplierOrder)
+                .HasForeignKey(p => p.SupplierId)
                 .OnDelete(DeleteBehavior.Cascade);
 
             // 🔹 Asegurar que `Material` sea tratado como un simple string y no como una relación
-            builder.Entity<PedidoProveedor>()
+            builder.Entity<SupplierOrder>()
                 .Property(p => p.Material)
                 .HasColumnType("nvarchar(255)")
                 .IsRequired();
 
             // 🔹 Configurar relación entre `PagoProveedor` y `Proveedor`
-            builder.Entity<PagoProveedor>()
-                .HasOne(p => p.Proveedor)
-                .WithMany(p => p.Pagos)
-                .HasForeignKey(p => p.ProveedorId)
+            builder.Entity<SupplierPayment>()
+                .HasOne(p => p.Supplier)
+                .WithMany(p => p.SupplierPayment)
+                .HasForeignKey(p => p.SupplierId)
                 .OnDelete(DeleteBehavior.Cascade);
 
             builder.Entity<ProjectPhaseTasks>()

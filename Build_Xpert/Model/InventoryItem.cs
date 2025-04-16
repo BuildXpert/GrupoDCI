@@ -8,20 +8,20 @@ namespace Build_Xpert.Model
         public int Id { get; set; }
 
         [Required]
-        public string Nombre { get; set; }
+        public string Name { get; set; }
 
         [Required]
-        public string Categoria { get; set; }
+        public string Category { get; set; }
 
         public int Stock { get; set; }
 
         [Column(TypeName = "decimal(18,2)")]
-        public decimal Precio { get; set; }
+        public decimal Price { get; set; }
 
         public int? ProjectId { get; set; }
         public Project Project { get; set; }
 
-        public int ProveedorId { get; set; }
-        public Proveedor Proveedor { get; set; }
+        public int SupplierId { get; set; }
+        public Supplier Supplier { get; set; }
     }
 }

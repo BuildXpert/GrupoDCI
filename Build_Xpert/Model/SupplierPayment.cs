@@ -4,23 +4,23 @@ using System.ComponentModel.DataAnnotations.Schema;
 
 namespace Build_Xpert.Model
 {
-    public class PagoProveedor
+    public class SupplierPayment
     {
         [Key]
         [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
         public int Id { get; set; }
 
         [Required]
-        public int ProveedorId { get; set; }
+        public int SupplierId { get; set; }
 
-        [ForeignKey("ProveedorId")]
-        public Proveedor Proveedor { get; set; }
+        [ForeignKey("SupplierId")]
+        public Supplier Supplier { get; set; }
 
         [Required(ErrorMessage = "El monto del pago es obligatorio.")]
         [Range(1, double.MaxValue, ErrorMessage = "El monto debe ser mayor a 0.")]
-        public decimal Monto { get; set; }
+        public decimal Amount { get; set; }
 
         [Required(ErrorMessage = "La fecha del pago es obligatoria.")]
-        public DateTime Fecha { get; set; } = DateTime.Now;
+        public DateTime Date { get; set; } = DateTime.Now;
     }
 }

@@ -5,28 +5,28 @@ using System.ComponentModel.DataAnnotations.Schema;
 
 namespace Build_Xpert.Model
 {
-    public class Proveedor
+    public class Supplier
     {
         [Key]
         [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
         public int Id { get; set; }
 
         [Required(ErrorMessage = "El nombre del proveedor es obligatorio.")]
-        public string Nombre { get; set; }
+        public string Name { get; set; }
 
         [Required(ErrorMessage = "El tipo de servicio o maquinaria es obligatorio.")]
-        public string TipoServicio { get; set; } 
+        public string ServiceType { get; set; } 
 
         [Required(ErrorMessage = "El contacto es obligatorio.")]
-        public string Contacto { get; set; }
+        public string Contact { get; set; }
 
         [Required(ErrorMessage = "La dirección es obligatoria.")]
-        public string Direccion { get; set; }
+        public string Address { get; set; }
 
         [Required(ErrorMessage = "El estado es obligatorio.")]
-        public string Estado { get; set; } = "Activo";
+        public string Status { get; set; } = "Activo";
 
-        public ICollection<PagoProveedor> Pagos { get; set; } = new List<PagoProveedor>();
-        public ICollection<PedidoProveedor> Pedidos { get; set; } = new List<PedidoProveedor>();
+        public ICollection<SupplierPayment> SupplierPayment { get; set; } = new List<SupplierPayment>();
+        public ICollection<SupplierOrder> SupplierOrder { get; set; } = new List<SupplierOrder>();
     }
 }

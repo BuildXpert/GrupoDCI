@@ -141,7 +141,7 @@
                         <button class="btn btn-outline-secondary btn-fixed-size ms-2" @onclick="GoBack">
                             Volver
                         </button>
-                        <a href="/Inventario/@Id" class="btn btn-primary ms-2">Ver Inventario</a>
+                        <a href="/Inventory/@Id" class="btn btn-primary ms-2">Ver Inventario</a>
                     </div>
                 </div>
             </div>
@@ -394,7 +394,7 @@
                                                         <option id="defaultOption" value="">Seleccione el item del inventario</option>
                                                         @foreach (var item in inventory)
                                                         {
-                                                            <option value="@item.Id">@item.Nombre (precio: @item.Precio)</option>
+                                                            <option value="@item.Id">@item.Name (precio: @item.Price)</option>
                                                         }
                                                     </InputSelect>
                                                     <InputNumber @bind-Value="form.Quantity" style="margin-bottom:5px">Ingrese la cantidad de items utilizados</InputNumber>

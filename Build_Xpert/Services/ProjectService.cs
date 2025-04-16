@@ -19,7 +19,7 @@ namespace Build_Xpert.Services
         public async Task<List<Project>> GetProjectsAsync()
         {
             return await _context.Projects
-                .Include(p => p.Tasks)
+                .Include(p => p.ProjectPhase)
                 .Include(p => p.Client)
                 .Include(p => p.Admin)
                 .ToListAsync() ?? new List<Project>();
@@ -42,6 +42,12 @@ namespace Build_Xpert.Services
             project.Admin = admin;
 
             await _context.Projects.AddAsync(project);
+            await _context.SaveChangesAsync();
+
+            var defaultPhases = ProjectPhaseDefaults.GenerateDefaultPhases(project.Id);
+            await _context.ProjectPhases.AddRangeAsync(defaultPhases);
+
+            // Guarda las fases
             await _context.SaveChangesAsync();
         }
 
@@ -74,19 +80,26 @@ namespace Build_Xpert.Services
             }
         }
 
-        public async Task AddTaskToProjectAsync(int projectId, ProjectTask task)
+        public async Task AddTaskToProjectPhaseAsync(int projectId, int phaseId, string taskTitle, string description, bool IsCompleted)
         {
             var project = await _context.Projects
-                .Include(p => p.Tasks)
-                .FirstOrDefaultAsync(p => p.Id == projectId);
+                .Include(p => p.ProjectPhase)
+                .FirstOrDefaultAsync(p => p.Id == projectId) ?? throw new Exception("Proyecto no encontrado.");
 
-            if (project != null && task != null)
+            var phase = project.ProjectPhase.FirstOrDefault(p => p.PhaseId == phaseId) ?? throw new Exception("Fase no encontrada");
+
+            var phaseTasks = new ProjectPhaseTasks
             {
-                task.ProjectId = projectId;
-                task.CreatedAt = DateTime.UtcNow;
-                await _context.Tasks.AddAsync(task);
-                await _context.SaveChangesAsync();
-            }
+                Title = taskTitle,
+                Description = description,
+                IsCompleted = IsCompleted,
+                PhaseId = phaseId,
+                CreatedAt = DateTime.Now
+            };
+
+            await _context.Tasks.AddAsync(phaseTasks);
+            await _context.SaveChangesAsync();
+
         }
 
 
@@ -113,39 +126,41 @@ namespace Build_Xpert.Services
         public async Task<Project> GetProjectByIdAsync(int id)
         {
             return await _context.Projects
-                .Include(p => p.Tasks)
+                .Include(p => p.ProjectPhase)
+                    .ThenInclude(p => p.ProjectPhaseTasks)
                 .Include(p => p.Client)
                 .Include(p => p.Admin)
                 .FirstOrDefaultAsync(p => p.Id == id);
         }
 
-        public async Task<ProjectTask> GetTaskByIdAsync(int id)
+        public async Task<ProjectPhaseTasks> GetTaskByIdAsync(int id)
         {
             return await _context.Tasks
-                .Include(t => t.Project)
-                .FirstOrDefaultAsync(t => t.Id == id);
+                .Include(t => t.ProjectPhase)
+                .FirstOrDefaultAsync(t => t.TaskId == id);
         }
 
-        public async Task<List<ProjectTask>> GetTasksByProjectIdAsync(int projectId)
+        public async Task<List<ProjectPhaseTasks>> GetTasksByProjectIdAndPhaseIdAsync(int phaseId, int projectId)
         {
             return await _context.Tasks
-                .Where(t => t.ProjectId == projectId)
-                .OrderByDescending(t => t.CreatedAt) 
+                .Include(t => t.ProjectPhase)                     
+                    .ThenInclude(p => p.Project)           
+                .Where(t => t.PhaseId == phaseId && t.ProjectPhase.ProjectId == projectId)
                 .ToListAsync();
         }
 
 
 
-        public async Task UpdateTaskAsync(ProjectTask task)
+        public async Task UpdateTaskAsync(ProjectPhaseTasks task)
         {
             if (task == null)
                 throw new ArgumentException("La tarea no puede ser nula.");
 
-            var existingTask = await _context.Tasks.FindAsync(task.Id);
+            var existingTask = await _context.Tasks.FindAsync(task.TaskId);
             if (existingTask != null)
             {
                 existingTask.Title = task.Title;
-                existingTask.Description = task.Description; // Se actualiza la descripción
+                existingTask.Description = task.Description;
                 existingTask.IsCompleted = task.IsCompleted;
 
                 await _context.SaveChangesAsync();
@@ -156,7 +171,8 @@ namespace Build_Xpert.Services
         public async Task<List<Project>> GetFilteredProjectsAsync(string searchText, string status)
         {
             var query = _context.Projects
-                .Include(p => p.Tasks)
+                .Include(p => p.ProjectPhase)
+                    .ThenInclude (p => p.ProjectPhaseTasks)
                 .Include(p => p.Client)
                 .Include(p => p.Admin)
                 .AsQueryable();

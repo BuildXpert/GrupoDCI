@@ -21,6 +21,7 @@ namespace Build_Xpert.Model
 
         public string ClientId { get; set; }
 
+        // Relación con los usuarios para determinar su rol
         [ForeignKey("ClientId")]
         public ApplicationUser Client { get; set; }
 
@@ -29,8 +30,8 @@ namespace Build_Xpert.Model
 
         public string? AdminId { get; set; }
 
-        // Relación con Tareas del Proyecto
-        public ICollection<ProjectTask> Tasks { get; set; } = new List<ProjectTask>();
+        // Relación con las fases del Proyecto
+        public ICollection<ProjectPhase> ProjectPhase { get; set; }
 
         [Required(ErrorMessage = "El tipo de construcción es obligatorio.")]
         public string ConstructionType { get; set; }  // Prefabricados o Block

@@ -3,89 +3,92 @@
 @using Build_Xpert.Model
 @using Build_Xpert.Services
 @using Microsoft.AspNetCore.Identity
+@using Microsoft.EntityFrameworkCore
 @inject ProjectService ProjectService
 @inject UserService UserService
+@inject InventoryService inventoryService
 @inject UserManager<ApplicationUser> UserManager
 @inject AuthenticationStateProvider AuthenticationStateProvider
 @inject NavigationManager Navigation
+@inject IJSRuntime JSRuntime
 
 <!-- Estilos personalizados -->
 <style>
     .profile-header {
-        position: relative;
-        width: 100%;
-        height: 300px;
-        background: url("https://images.pexels.com/photos/106399/pexels-photo-106399.jpeg") center center / cover no-repeat;
+    position: relative;
+    width: 100%;
+    height: 300px;
+    background: url("https://images.pexels.com/photos/106399/pexels-photo-106399.jpeg") center center / cover no-repeat;
     }
 
-        .profile-header::after {
-            content: "";
-            position: absolute;
-            bottom: 0;
-            left: 0;
-            width: 100%;
-            height: 40%;
-            background: linear-gradient(to bottom, rgba(255, 255, 255, 0) 0%, white 100%);
-        }
+    .profile-header::after {
+    content: "";
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    height: 40%;
+    background: linear-gradient(to bottom, rgba(255, 255, 255, 0) 0%, white 100%);
+    }
 
     .btn-fixed-size {
-        width: 140px;
-        text-align: center;
+    width: 140px;
+    text-align: center;
     }
 
     .btn-sm-fixed-size {
-        width: 100px;
-        text-align: center;
+    width: 100px;
+    text-align: center;
     }
 
     .carousel-item img {
-        height: 400px;
-        object-fit: cover;
-        border-radius: 8px;
+    height: 400px;
+    object-fit: cover;
+    border-radius: 8px;
     }
 
     .ficha-tecnica {
-        background-color: #f8f9fa;
-        border-radius: 8px;
-        padding: 20px;
-        height: 100%;
+    background-color: #f8f9fa;
+    border-radius: 8px;
+    padding: 20px;
+    height: 100%;
     }
 
     /* Estilos para las pestañas */
     .nav-tabs .nav-link {
-        color: #495057;
-        font-weight: 500;
+    color: #495057;
+    font-weight: 500;
     }
 
-        .nav-tabs .nav-link.active {
-            font-weight: 600;
-            border-bottom: 3px solid #0d6efd;
-        }
+    .nav-tabs .nav-link.active {
+    font-weight: 600;
+    border-bottom: 3px solid #0d6efd;
+    }
 
     .tab-content {
-        padding: 20px 0;
+    padding: 20px 0;
     }
 
     /* Estilos para las pestañas de fases */
     .phase-tabs .nav-link {
-        font-size: 0.9rem;
-        padding: 0.5rem 1rem;
+    font-size: 0.9rem;
+    padding: 0.5rem 1rem;
     }
 
-        .phase-tabs .nav-link.active {
-            font-weight: 600;
-            border-bottom: 3px solid #0d6efd;
-            background-color: #f8f9fa;
-        }
+    .phase-tabs .nav-link.active {
+    font-weight: 600;
+    border-bottom: 3px solid #0d6efd;
+    background-color: #f8f9fa;
+    }
 
     .phase-badge {
-        font-size: 0.75rem;
-        margin-left: 5px;
+    font-size: 0.75rem;
+    margin-left: 5px;
     }
 
     .phase-progress {
-        height: 5px;
-        margin-top: 5px;
+    height: 5px;
+    margin-top: 5px;
     }
 </style>
 
@@ -119,10 +122,10 @@
                     <!-- Barra de progreso general -->
                     <div class="progress mt-4">
                         <div class="progress-bar progress-bar-striped progress-bar-animated bg-success"
-                             role="progressbar"
-                             style="width: @ProgressPercentage%;"
-                             aria-valuenow="@ProgressPercentage"
-                             aria-valuemin="0" aria-valuemax="100">
+                        role="progressbar"
+                        style="width: @ProgressPercentage%;"
+                        aria-valuenow="@ProgressPercentage"
+                        aria-valuemin="0" aria-valuemax="100">
                             @ProgressPercentage%
                         </div>
                     </div>
@@ -138,7 +141,7 @@
                         <button class="btn btn-outline-secondary btn-fixed-size ms-2" @onclick="GoBack">
                             Volver
                         </button>
-                        <a href="/Inventario" class="btn btn-primary ms-2">Ver Inventario</a>
+                        <a href="/Inventario/@Id" class="btn btn-primary ms-2">Ver Inventario</a>
                     </div>
                 </div>
             </div>
@@ -263,27 +266,36 @@
                         </div>
                     }
 
-                    @if (project.Tasks == null || project.Tasks.Count == 0)
+                    @if (projectPhase.ProjectPhaseTasks == null || projectPhase.ProjectPhaseTasks.Count == 0)
                     {
-                        <p class="text-muted">No hay tareas asignadas.</p>
+                        <div class="alert alert-info mt-3">
+                            No hay tareas registradas para esta fase aún.
+                        </div>
+                    }
+
+                    @if (projectPhase == null)
+                    {
+                        <div class="alert alert-warning mt-3">
+                            No se pudo cargar la fase del proyecto.
+                        </div>
                     }
                     else
                     {
                         <!-- Pestañas de fases fijas -->
                         <ul class="nav nav-tabs phase-tabs" id="phaseTabs" role="tablist">
-                            @foreach (var phase in ConstructionPhases)
+                            @foreach (var phase in projectPhases)
                             {
                                 <li class="nav-item" role="presentation">
-                                    <button class="nav-link @(phase == ConstructionPhases.First() ? "active" : "")"
-                                            id="@($"tab-{phase}")"
-                                            data-bs-toggle="tab"
-                                            data-bs-target="@($"#phase-{phase}")"
-                                            type="button"
-                                            role="tab"
-                                            aria-controls="@($"phase-{phase}")"
-                                            aria-selected="@(phase == ConstructionPhases.First() ? "true" : "false")">
-                                        @phase
-                                        <span class="badge bg-primary phase-badge">@GetTasksForPhase(phase).Count</span>
+                                    <button class="nav-link @(phase == projectPhases.First() ? "active" : "")"
+                                    id="@($"tab-{phase.PhaseId}")"
+                                    data-bs-toggle="tab"
+                                    data-bs-target="@($"#phase-{phase.PhaseId}")"
+                                    type="button"
+                                    role="tab"
+                                    aria-controls="@($"phase-{phase.PhaseId}")"
+                                    aria-selected="@(phase == projectPhases.First() ? "true" : "false")">
+                                        @phase.PhaseName
+                                        <span class="badge bg-primary phase-badge">@GetTasksForPhase(phase.PhaseName).Count</span>
                                     </button>
                                 </li>
                             }
@@ -291,26 +303,26 @@
 
                         <!-- Contenido de las pestañas de fases -->
                         <div class="tab-content border border-top-0 p-3" id="phaseTabsContent">
-                            @foreach (var phase in ConstructionPhases)
+                            @foreach (var phase in projectPhases)
                             {
-                                var phaseTasks = GetTasksForPhase(phase);
-                                var phaseProgress = GetPhaseProgress(phase);
+                                var phaseTasks = GetTasksForPhase(phase.PhaseName);
+                                var phaseProgress = GetPhaseProgress(phase.PhaseName);
 
-                                <div class="tab-pane fade @(phase == ConstructionPhases.First() ? "show active" : "")"
-                                     id="@($"phase-{phase}")"
-                                     role="tabpanel"
-                                     aria-labelledby="@($"tab-{phase}")">
+                                <div class="tab-pane fade @(phase == projectPhases.First() ? "show active" : "")"
+                                id="@($"phase-{phase.PhaseId}")"
+                                role="tabpanel"
+                                aria-labelledby="@($"tab-{phase}")">
 
                                     <!-- Barra de progreso de la fase -->
                                     <div class="mb-3">
                                         <small class="text-muted">Progreso de la fase: @phaseProgress.ToString("0")%</small>
                                         <div class="progress phase-progress">
                                             <div class="progress-bar @GetProgressBarClass(phaseProgress)"
-                                                 role="progressbar"
-                                                 style="width: @phaseProgress%;"
-                                                 aria-valuenow="@phaseProgress"
-                                                 aria-valuemin="0"
-                                                 aria-valuemax="100"></div>
+                                            role="progressbar"
+                                            style="width: @phaseProgress%;"
+                                            aria-valuenow="@phaseProgress"
+                                            aria-valuemin="0"
+                                            aria-valuemax="100"></div>
                                         </div>
                                     </div>
 
@@ -355,10 +367,10 @@
                                                                         Editar
                                                                     </button>
                                                                     <button class="btn btn-sm @(task.IsCompleted ? "btn-warning" : "btn-success") btn-sm-fixed-size"
-                                                                            @onclick="() => ToggleTaskCompletion(task.Id)">
+                                                                    @onclick="() => ToggleTaskCompletion(task.TaskId)">
                                                                         @(task.IsCompleted ? "Reabrir" : "Completar")
                                                                     </button>
-                                                                    <button class="btn btn-sm btn-outline-danger btn-sm-fixed-size ms-2" @onclick="() => DeleteTask(task.Id)">
+                                                                    <button class="btn btn-sm btn-outline-danger btn-sm-fixed-size ms-2" @onclick="() => DeleteTask(task.TaskId)">
                                                                         Eliminar
                                                                     </button>
                                                                 </td>
@@ -369,6 +381,28 @@
                                             </table>
                                         </div>
                                     }
+                                    <div class="inventoryFormContainer card p-4 mt-3" style="display:block">
+                                        <p class="text-muted" style="margin-top:10px">Utilizo inventario en esta fase?</p>
+                                        <button class="btn btn-primary ms-2" @onclick="@(() => AddForm(phase.PhaseId))" style="margin-bottom:10px">Agregar item</button>
+                                        @if (phaseFormIndexes.ContainsKey(phase.PhaseId))
+                                        {
+                                            foreach (var form in phaseFormIndexes[phase.PhaseId])
+                                            {
+                                                <EditForm Model="form" method="post" class="d-flex gap-2">
+                                                    <p>Item seleccionado: @form.InventoryItemId</p>
+                                                    <InputSelect @bind-Value="form.InventoryItemId" class="form-select dropdownOptions" @attributes="form.SelectedAttributes" style="margin-bottom:5px">
+                                                        <option id="defaultOption" value="">Seleccione el item del inventario</option>
+                                                        @foreach (var item in inventory)
+                                                        {
+                                                            <option value="@item.Id">@item.Nombre (precio: @item.Precio)</option>
+                                                        }
+                                                    </InputSelect>
+                                                    <InputNumber @bind-Value="form.Quantity" style="margin-bottom:5px">Ingrese la cantidad de items utilizados</InputNumber>
+                                                    <button type="submit" class="btn btn-outline-success mt-2 submitBtn" style="margin-bottom:5px" @onclick="async () => await inventoryService.RegisterInventoryUsage(Id,form.InventoryItemId,form.Quantity)">Registrar</button>
+                                                </EditForm>
+                                            }
+                                        }
+                                    </div>
                                 </div>
                             }
                         </div>
@@ -587,20 +621,14 @@
     private string newTaskDescription = "";
     private string editProjectName = "";
     private string editProjectDescription = "";
-    private ProjectTask selectedTask = null;
-    private ProjectTask editingTask = new();
+    private ProjectPhase projectPhase = new();
+    private ProjectPhaseTasks projectPhaseTasks = new();
+    private ProjectPhaseTasks selectedTask = null;
+    private ProjectPhaseTasks editingTask = new();
     private string editTaskTitle = "";
     private string editTaskDescription = "";
 
-    // Fases fijas de construcción
-    private readonly List<string> ConstructionPhases = new()
-    {
-        "Planificación",
-        "Preparación de obra",
-        "Cimentación y estructura",
-        "Acabados",
-        "Inspecciones de calidad"
-    };
+    private List<ProjectPhase>? projectPhases;
 
     private List<string> houseImages = new()
     {
@@ -609,8 +637,13 @@
         "https://images.pexels.com/photos/534151/pexels-photo-534151.jpeg"
     };
 
+    //To handle the inventory section for tasks use
+    private List<InventoryItem> inventory = new();
+    private Dictionary<int, List<InventoryForm>> phaseFormIndexes = new();
+
     protected override async Task OnInitializedAsync()
     {
+
         var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
         var user = authState.User;
 
@@ -630,46 +663,70 @@
         {
             client = await UserService.GetUserByIdAsync(project.ClientId);
             admin = await UserService.GetUserByIdAsync(project.AdminId);
+            projectPhases = project.ProjectPhase?.ToList() ?? new List<ProjectPhase>();
+
+            // foreach (var phase in projectPhases)
+            // {
+            //     phaseFormIndexes[phase.PhaseId] = new List<InventoryForm> { new InventoryForm() };
+            // }
         }
+
+        inventory = await inventoryService.GetByProjectIdAsync(Id);
     }
 
     // Métodos para manejar las fases (sin modificar el modelo de tareas)
-    private List<ProjectTask> GetTasksForPhase(string phase)
+    private List<ProjectPhaseTasks> GetTasksForPhase(string phaseName)
     {
-        if (project.Tasks == null) return new List<ProjectTask>();
+        // var projectPhases = project.ProjectPhase.ToList();
+
+        // return projectPhases;
 
         // Filtra las tareas según la fase (aquí puedes implementar tu lógica específica)
-        return phase switch
+        return phaseName switch
         {
-            "Planificación" => project.Tasks
-                .Where(t => t.Title.Contains("diseño") ||
-                           t.Title.Contains("plan") ||
-                           t.Description.Contains("planificación"))
-                .ToList(),
-            "Preparación de obra" => project.Tasks
-                .Where(t => t.Title.Contains("permiso") ||
-                           t.Title.Contains("preparación") ||
-                           t.Description.Contains("preparación obra"))
-                .ToList(),
-            "Cimentación y estructura" => project.Tasks
-                .Where(t => t.Title.Contains("cimentación") ||
-                           t.Title.Contains("estructura") ||
-                           t.Description.Contains("hormigón") ||
-                           t.Description.Contains("estructura"))
-                .ToList(),
-            "Acabados" => project.Tasks
-                .Where(t => t.Title.Contains("acabado") ||
-                           t.Title.Contains("pintura") ||
-                           t.Title.Contains("instalación") ||
-                           t.Description.Contains("acabados"))
-                .ToList(),
-            "Inspecciones de calidad" => project.Tasks
-                .Where(t => t.Title.Contains("inspección") ||
-                           t.Title.Contains("calidad") ||
-                           t.Description.Contains("revisión") ||
-                           t.Description.Contains("control calidad"))
-                .ToList(),
-            _ => new List<ProjectTask>()
+            "Planificación" => projectPhases?
+            .Where(p => p.PhaseName == phaseName)
+            .SelectMany(p => p.ProjectPhaseTasks)
+            .Where(t => t.Title.Contains("diseño") ||
+                        t.Title.Contains("plan") ||
+                        t.Description.Contains("planificación"))
+            .ToList() ?? new List<ProjectPhaseTasks>(),
+
+            "Preparación de obra" => projectPhases?
+                        .Where(p => p.PhaseName == phaseName)
+                        .SelectMany(p => p.ProjectPhaseTasks)
+                        .Where(t => t.Title.Contains("permiso") ||
+                                    t.Title.Contains("preparación") ||
+                                    t.Description.Contains("preparación obra"))
+                        .ToList() ?? new List<ProjectPhaseTasks>(),
+
+            "Cimentación y estructura" => projectPhases?
+                        .Where(p => p.PhaseName == phaseName)
+                        .SelectMany(p => p.ProjectPhaseTasks)
+                        .Where(t => t.Title.Contains("cimentación") ||
+                                    t.Title.Contains("estructura") ||
+                                    t.Description.Contains("hormigón") ||
+                                    t.Description.Contains("estructura"))
+                        .ToList() ?? new List<ProjectPhaseTasks>(),
+
+            "Acabados" => projectPhases?
+                        .Where(p => p.PhaseName == phaseName)
+                        .SelectMany(p => p.ProjectPhaseTasks)
+                        .Where(t => t.Title.Contains("acabado") ||
+                                    t.Title.Contains("pintura") ||
+                                    t.Description.Contains("instalación") ||
+                                    t.Description.Contains("acabados"))
+                        .ToList() ?? new List<ProjectPhaseTasks>(),
+
+            "Inspecciones de calidad" => projectPhases?
+                        .Where(p => p.PhaseName == phaseName)
+                        .SelectMany(p => p.ProjectPhaseTasks)
+                        .Where(t => t.Title.Contains("inspección") ||
+                                    t.Title.Contains("calidad") ||
+                                    t.Description.Contains("revisión") ||
+                                    t.Description.Contains("control calidad"))
+                        .ToList() ?? new List<ProjectPhaseTasks>(),
+            _ => new List<ProjectPhaseTasks>()
         };
     }
 
@@ -693,9 +750,15 @@
     }
 
     // Resto de métodos (se mantienen igual)
-    private int ProgressPercentage => project.Tasks == null || project.Tasks.Count == 0
+    private int ProgressPercentage => projectPhase.ProjectPhaseTasks == null || projectPhase.ProjectPhaseTasks.Count == 0
         ? 0
-        : (int)((double)project.Tasks.Count(t => t.IsCompleted) / project.Tasks.Count * 100);
+        : (int)((double)projectPhases
+                    .SelectMany(p => p.ProjectPhaseTasks)
+                    .Count(t => t.IsCompleted)
+                /
+                projectPhases
+                    .SelectMany(p => p.ProjectPhaseTasks)
+                    .Count() * 100);
 
     private void OpenAddTaskModal() => showAddTaskModal = true;
     private void CloseAddTaskModal() => showAddTaskModal = false;
@@ -721,7 +784,7 @@
         }
     }
 
-    private void OpenEditTaskModal(ProjectTask task)
+    private void OpenEditTaskModal(ProjectPhaseTasks task)
     {
         editingTask = task;
         editTaskTitle = task.Title;
@@ -743,21 +806,21 @@
         }
     }
 
-    private void OpenTaskModal(ProjectTask task) => selectedTask = task;
+    private void OpenTaskModal(ProjectPhaseTasks task) => selectedTask = task;
     private void CloseTaskModal() => selectedTask = null;
 
     private async Task AddTask()
     {
         if (!string.IsNullOrWhiteSpace(newTaskTitle))
         {
-            var newTask = new ProjectTask
+            var newTask = new ProjectPhaseTasks
                 {
                     Title = newTaskTitle,
                     Description = newTaskDescription,
-                    ProjectId = project.Id
+                    PhaseId = projectPhase.PhaseId
                 };
 
-            await ProjectService.AddTaskToProjectAsync(project.Id, newTask);
+            await ProjectService.AddTaskToProjectPhaseAsync(project.Id, projectPhase.PhaseId, projectPhaseTasks.Title, projectPhaseTasks.Description, projectPhaseTasks.IsCompleted);
             await RefreshProject();
             CloseAddTaskModal();
         }
@@ -782,7 +845,32 @@
         {
             client = await UserService.GetUserByIdAsync(project.ClientId);
             admin = await UserService.GetUserByIdAsync(project.AdminId);
+            projectPhases = project.ProjectPhase?.ToList() ?? new List<ProjectPhase>();
         }
+    }
+
+    protected async void AddForm(int phaseId)
+    {
+        var newForm = new InventoryForm
+            {
+                SelectedAttributes = new Dictionary<string, object>
+                {
+                    {"tabindex", "0"}
+                }
+            };
+
+        if (!phaseFormIndexes.ContainsKey(phaseId))
+        {
+            phaseFormIndexes[phaseId] = new List<InventoryForm>();
+        }
+
+        phaseFormIndexes[phaseId].Add(newForm);
+        await InvokeJavaScript();
+    }
+
+    private async Task InvokeJavaScript()
+    {
+        await JSRuntime.InvokeVoidAsync("startApp");
     }
 
     private void GoBack() => Navigation.NavigateTo("/projects");

@@ -1,4 +1,4 @@
-﻿using Build_Xpert.Migrations;
+﻿
 using Build_Xpert.Model;
 using Microsoft.EntityFrameworkCore;
 
@@ -16,7 +16,7 @@ namespace Build_Xpert.Services
         public async Task<List<InventoryItem>> GetByProjectIdAsync(int projectId)
         {
             return await _context.InventoryItems
-                .Include(i => i.Proveedor)
+                .Include(i => i.Supplier)
                 .Include(i => i.Project)
                 .Where(i => i.ProjectId == projectId)
                 .ToListAsync();
@@ -43,7 +43,7 @@ namespace Build_Xpert.Services
             _context.Entry(item).State = EntityState.Modified;
 
             // 4. Ignorar relaciones si no las estás modificando
-            _context.Entry(item).Reference(i => i.Proveedor).IsModified = false;
+            _context.Entry(item).Reference(i => i.Supplier).IsModified = false;
             _context.Entry(item).Reference(i => i.Project).IsModified = false;
 
             await _context.SaveChangesAsync();
@@ -84,7 +84,7 @@ namespace Build_Xpert.Services
                 throw new Exception("Stock insuficiente");
             }
 
-            var totalSpend = item.Precio * quantityUsed;
+            var totalSpend = item.Price * quantityUsed;
 
             var use = new InventoryItemUsage
             {

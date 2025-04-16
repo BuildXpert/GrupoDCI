@@ -1,7 +1,7 @@
-﻿@page "/proveedor-details/{id:int}"
+﻿@page "/Supplier-details/{id:int}"
 @using Build_Xpert.Model
 @using Build_Xpert.Services
-@inject ProveedorService ProveedorService
+@inject SupplierService ProveedorService
 @inject ProjectService ProjectService
 @inject NavigationManager Navigation
 @inject IJSRuntime JSRuntime
@@ -180,29 +180,29 @@
             <div class="proveedor-info">
                 <div class="info-card">
                     <h5><i class="fas fa-signature me-2"></i>Nombre</h5>
-                    <p>@proveedor.Nombre</p>
+                    <p>@proveedor.Name</p>
                 </div>
 
                 <div class="info-card">
                     <h5><i class="fas fa-tools me-2"></i>Servicio</h5>
-                    <p>@proveedor.TipoServicio</p>
+                    <p>@proveedor.ServiceType</p>
                 </div>
 
                 <div class="info-card">
                     <h5><i class="fas fa-phone-alt me-2"></i>Contacto</h5>
-                    <p>@proveedor.Contacto</p>
+                    <p>@proveedor.Contact</p>
                 </div>
 
                 <div class="info-card">
                     <h5><i class="fas fa-map-marker-alt me-2"></i>Dirección</h5>
-                    <p>@proveedor.Direccion</p>
+                    <p>@proveedor.Address</p>
                 </div>
 
                 <div class="info-card">
                     <h5><i class="fas fa-circle me-2"></i>Estado</h5>
                     <p>
-                        <span class="badge @(proveedor.Estado == "Activo" ? "bg-success" : "bg-secondary")">
-                            @proveedor.Estado
+                        <span class="badge @(proveedor.Status == "Activo" ? "bg-success" : "bg-secondary")">
+                            @proveedor.Status
                         </span>
                     </p>
                 </div>
@@ -234,17 +234,17 @@
                                     <label class="form-label">Monto</label>
                                     <div class="input-group">
                                         <span class="input-group-text">₡</span>
-                                        <input type="number" class="form-control" @bind="nuevoPago.Monto" min="0" step="0.01" />
+                                        <input type="number" class="form-control" @bind="nuevoPago.Amount" min="0" step="0.01" />
                                     </div>
-                                    @if (showErrorPago && nuevoPago.Monto <= 0)
+                                    @if (showErrorPago && nuevoPago.Amount <= 0)
                                     {
                                         <small class="text-danger">El monto debe ser mayor a 0</small>
                                     }
                                 </div>
                                 <div class="col-md-6">
                                     <label class="form-label">Fecha</label>
-                                    <input type="date" class="form-control" @bind="nuevoPago.Fecha" />
-                                    @if (showErrorPago && nuevoPago.Fecha == default)
+                                    <input type="date" class="form-control" @bind="nuevoPago.Date" />
+                                    @if (showErrorPago && nuevoPago.Date == default)
                                     {
                                         <small class="text-danger">Seleccione una fecha válida</small>
                                     }
@@ -288,8 +288,8 @@
                                     @foreach (var pago in pagosPaginados)
                                     {
                                         <tr>
-                                            <td>@pago.Fecha.ToString("dd/MM/yyyy")</td>
-                                            <td>₡@pago.Monto.ToString("N2")</td>
+                                            <td>@pago.Date.ToString("dd/MM/yyyy")</td>
+                                            <td>₡@pago.Amount.ToString("N2")</td>
                                             <td>
                                                 <button class="btn btn-sm btn-outline-danger"
                                                         @onclick="() => EliminarPago(pago.Id)"
@@ -346,8 +346,8 @@
                                 </div>
                                 <div class="col-md-2">
                                     <label class="form-label">Cantidad</label>
-                                    <input type="number" class="form-control" @bind="nuevoPedido.Cantidad" min="1" />
-                                    @if (showErrorPedido && nuevoPedido.Cantidad <= 0)
+                                    <input type="number" class="form-control" @bind="nuevoPedido.Quantity" min="1" />
+                                    @if (showErrorPedido && nuevoPedido.Quantity <= 0)
                                     {
                                         <small class="text-danger">La cantidad debe ser mayor a 0</small>
                                     }
@@ -356,9 +356,9 @@
                                     <label class="form-label">Precio Unitario</label>
                                     <div class="input-group">
                                         <span class="input-group-text">₡</span>
-                                        <input type="number" step="0.01" class="form-control" @bind="nuevoPedido.Monto" />
+                                        <input type="number" step="0.01" class="form-control" @bind="nuevoPedido.Amount" />
                                     </div>
-                                    @if (showErrorPedido && nuevoPedido.Monto <= 0)
+                                    @if (showErrorPedido && nuevoPedido.Amount <= 0)
                                     {
                                         <small class="text-danger">El precio es obligatorio</small>
                                     }
@@ -379,8 +379,8 @@
                                 </div>
                                 <div class="col-12">
                                     <label class="form-label">Descripción</label>
-                                    <textarea class="form-control" rows="2" @bind="nuevoPedido.Descripcion"></textarea>
-                                    @if (showErrorPedido && string.IsNullOrWhiteSpace(nuevoPedido.Descripcion))
+                                    <textarea class="form-control" rows="2" @bind="nuevoPedido.Description"></textarea>
+                                    @if (showErrorPedido && string.IsNullOrWhiteSpace(nuevoPedido.Description))
                                     {
                                         <small class="text-danger">La descripción es obligatoria</small>
                                     }
@@ -439,10 +439,10 @@
                                     {
                                         <tr>
                                             <td>@pedido.Material</td>
-                                            <td>@pedido.Cantidad</td>
-                                            <td>₡@pedido.Monto.ToString("N2")</td>
-                                            <td>₡@((pedido.Monto * pedido.Cantidad).ToString("N2"))</td>
-                                            <td>@pedido.FechaPedido.ToString("dd/MM/yyyy")</td>
+                                            <td>@pedido.Quantity</td>
+                                            <td>₡@pedido.Amount.ToString("N2")</td>
+                                            <td>₡@((pedido.Amount * pedido.Quantity).ToString("N2"))</td>
+                                            <td>@pedido.RequestDate.ToString("dd/MM/yyyy")</td>
                                             <td>@(pedido.Project?.Name ?? "Sin proyecto")</td>
                                             <td>
                                                 <button class="btn btn-sm btn-outline-danger"
@@ -503,39 +503,39 @@
                     <div class="row g-3">
                         <div class="col-md-6">
                             <label class="form-label">Nombre</label>
-                            <input type="text" class="form-control" @bind="editProveedor.Nombre" />
-                            @if (string.IsNullOrWhiteSpace(editProveedor.Nombre))
+                            <input type="text" class="form-control" @bind="editProveedor.Name" />
+                            @if (string.IsNullOrWhiteSpace(editProveedor.Name))
                             {
                                 <small class="text-danger">El nombre es obligatorio</small>
                             }
                         </div>
                         <div class="col-md-6">
                             <label class="form-label">Tipo de Servicio</label>
-                            <input type="text" class="form-control" @bind="editProveedor.TipoServicio" />
-                            @if (string.IsNullOrWhiteSpace(editProveedor.TipoServicio))
+                            <input type="text" class="form-control" @bind="editProveedor.ServiceType" />
+                            @if (string.IsNullOrWhiteSpace(editProveedor.ServiceType))
                             {
                                 <small class="text-danger">El servicio es obligatorio</small>
                             }
                         </div>
                         <div class="col-md-6">
                             <label class="form-label">Contacto</label>
-                            <input type="text" class="form-control" @bind="editProveedor.Contacto" />
-                            @if (string.IsNullOrWhiteSpace(editProveedor.Contacto))
+                            <input type="text" class="form-control" @bind="editProveedor.Contact" />
+                            @if (string.IsNullOrWhiteSpace(editProveedor.Contact))
                             {
                                 <small class="text-danger">El contacto es obligatorio</small>
                             }
                         </div>
                         <div class="col-md-6">
                             <label class="form-label">Dirección</label>
-                            <input type="text" class="form-control" @bind="editProveedor.Direccion" />
-                            @if (string.IsNullOrWhiteSpace(editProveedor.Direccion))
+                            <input type="text" class="form-control" @bind="editProveedor.Address" />
+                            @if (string.IsNullOrWhiteSpace(editProveedor.Address))
                             {
                                 <small class="text-danger">La dirección es obligatoria</small>
                             }
                         </div>
                         <div class="col-md-6">
                             <label class="form-label">Estado</label>
-                            <select class="form-control" @bind="editProveedor.Estado">
+                            <select class="form-control" @bind="editProveedor.Status">
                                 <option value="Activo">Activo</option>
                                 <option value="Inactivo">Inactivo</option>
                             </select>
@@ -559,18 +559,18 @@
     [Parameter] public int Id { get; set; }
 
     // Datos principales
-    private Proveedor proveedor;
-    private List<PagoProveedor> historialPagos = new();
-    private List<PedidoProveedor> historialPedidos = new();
+    private Supplier proveedor;
+    private List<SupplierPayment> historialPagos = new();
+    private List<SupplierOrder> historialPedidos = new();
     private List<Project> proyectos = new();
 
     // Formularios
-    private PagoProveedor nuevoPago = new();
-    private PedidoProveedor nuevoPedido = new();
+    private SupplierPayment nuevoPago = new();
+    private SupplierOrder nuevoPedido = new();
 
     // Tabs y modales
     private string activeTab = "pagos";
-    private Proveedor editProveedor = new();
+    private Supplier editProveedor = new();
     private bool showEditModal = false;
 
     // Filtros para pagos
@@ -588,11 +588,11 @@
     private int pagosPageSize = 5;
     private int pagosCurrentPage = 1;
     private int pagosTotalPages => (int)Math.Ceiling((double)historialPagos.Count / pagosPageSize);
-    private List<PagoProveedor> pagosPaginados => historialPagos
-        .Where(p => !pagosFechaInicio.HasValue || p.Fecha >= pagosFechaInicio.Value)
-        .Where(p => !pagosFechaFin.HasValue || p.Fecha <= pagosFechaFin.Value)
-        .Where(p => !pagosMontoMinimo.HasValue || p.Monto >= pagosMontoMinimo.Value)
-        .OrderByDescending(p => p.Fecha)
+    private List<SupplierPayment> pagosPaginados => historialPagos
+        .Where(p => !pagosFechaInicio.HasValue || p.Date >= pagosFechaInicio.Value)
+        .Where(p => !pagosFechaFin.HasValue || p.Date <= pagosFechaFin.Value)
+        .Where(p => !pagosMontoMinimo.HasValue || p.Amount >= pagosMontoMinimo.Value)
+        .OrderByDescending(p => p.Date)
         .Skip((pagosCurrentPage - 1) * pagosPageSize)
         .Take(pagosPageSize)
         .ToList();
@@ -601,30 +601,30 @@
     private int pedidosPageSize = 5;
     private int pedidosCurrentPage = 1;
     private int pedidosTotalPages => (int)Math.Ceiling((double)historialPedidos.Count / pedidosPageSize);
-    private List<PedidoProveedor> pedidosPaginados => historialPedidos
+    private List<SupplierOrder> pedidosPaginados => historialPedidos
         .Where(p => string.IsNullOrEmpty(pedidosFilter) ||
                p.Material.Contains(pedidosFilter, StringComparison.OrdinalIgnoreCase))
         .Where(p => pedidosProyectoFilter == 0 || p.ProjectId == pedidosProyectoFilter)
-        .Where(p => !pedidosFechaInicio.HasValue || p.FechaPedido >= pedidosFechaInicio.Value)
-        .Where(p => !pedidosFechaFin.HasValue || p.FechaPedido <= pedidosFechaFin.Value)
-        .OrderByDescending(p => p.FechaPedido)
+        .Where(p => !pedidosFechaInicio.HasValue || p.RequestDate >= pedidosFechaInicio.Value)
+        .Where(p => !pedidosFechaFin.HasValue || p.RequestDate <= pedidosFechaFin.Value)
+        .OrderByDescending(p => p.RequestDate)
         .Skip((pedidosCurrentPage - 1) * pedidosPageSize)
         .Take(pedidosPageSize)
         .ToList();
 
     // Validaciones
-    private bool showEditError => string.IsNullOrWhiteSpace(editProveedor.Nombre) ||
-                                 string.IsNullOrWhiteSpace(editProveedor.TipoServicio) ||
-                                 string.IsNullOrWhiteSpace(editProveedor.Contacto) ||
-                                 string.IsNullOrWhiteSpace(editProveedor.Direccion);
+    private bool showEditError => string.IsNullOrWhiteSpace(editProveedor.Name) ||
+                                 string.IsNullOrWhiteSpace(editProveedor.ServiceType) ||
+                                 string.IsNullOrWhiteSpace(editProveedor.Contact) ||
+                                 string.IsNullOrWhiteSpace(editProveedor.Address);
 
-    private bool showErrorPago => nuevoPago.Monto <= 0 || nuevoPago.Fecha == default;
+    private bool showErrorPago => nuevoPago.Amount <= 0 || nuevoPago.Date == default;
 
     private bool showErrorPedido => string.IsNullOrWhiteSpace(nuevoPedido.Material) ||
-                                   nuevoPedido.Cantidad <= 0 ||
-                                   string.IsNullOrWhiteSpace(nuevoPedido.Descripcion) ||
+                                   nuevoPedido.Quantity <= 0 ||
+                                   string.IsNullOrWhiteSpace(nuevoPedido.Description) ||
                                    nuevoPedido.ProjectId == 0 ||
-                                   nuevoPedido.Monto <= 0;
+                                   nuevoPedido.Amount <= 0;
 
     protected override async Task OnInitializedAsync()
     {
@@ -651,14 +651,14 @@
 
     private void ShowEdit()
     {
-        editProveedor = new Proveedor
+        editProveedor = new Supplier
             {
                 Id = proveedor.Id,
-                Nombre = proveedor.Nombre,
-                TipoServicio = proveedor.TipoServicio,
-                Contacto = proveedor.Contacto,
-                Direccion = proveedor.Direccion,
-                Estado = proveedor.Estado
+                Name = proveedor.Name,
+                ServiceType = proveedor.ServiceType,
+                Contact = proveedor.Contact,
+                Address = proveedor.Address,
+                Status = proveedor.Status
             };
         showEditModal = true;
     }
@@ -678,8 +678,8 @@
     {
         if (showErrorPago) return;
 
-        nuevoPago.ProveedorId = Id;
-        nuevoPago.Fecha = nuevoPago.Fecha == default ? DateTime.Now : nuevoPago.Fecha;
+        nuevoPago.SupplierId = Id;
+        nuevoPago.Date = nuevoPago.Date == default ? DateTime.Now : nuevoPago.Date;
 
         await ProveedorService.AddPagoAsync(nuevoPago);
         await LoadData();
@@ -690,8 +690,8 @@
     {
         if (showErrorPedido) return;
 
-        nuevoPedido.ProveedorId = Id;
-        nuevoPedido.FechaPedido = DateTime.Now;
+        nuevoPedido.SupplierId = Id;
+        nuevoPedido.RequestDate = DateTime.Now;
 
         await ProveedorService.AddPedidoAsync(nuevoPedido);
         await LoadData();

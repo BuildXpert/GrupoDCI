@@ -1,7 +1,7 @@
-﻿@page "/proveedores"
+﻿@page "/Suppliers"
 @using Build_Xpert.Model
 @using Build_Xpert.Services
-@inject ProveedorService ProveedorService
+@inject SupplierService ProveedorService
 @inject NavigationManager Navigation
 
 <!-- Estilos -->
@@ -51,11 +51,11 @@
                 <div class="col-md-4 mb-4">
                     <div class="card proveedor-card">
                         <div class="card-body">
-                            <h5 class="card-title">@proveedor.Nombre</h5>
-                            <p><strong>📞 Contacto:</strong> @proveedor.Contacto</p>
-                            <p><strong>🏗 Servicio:</strong> @proveedor.TipoServicio</p>
-                            <p><strong>📍 Dirección:</strong> @proveedor.Direccion</p>
-                            <p><strong>Estado:</strong> <span class="badge @(proveedor.Estado == "Activo" ? "bg-success" : "bg-secondary")">@proveedor.Estado</span></p>
+                            <h5 class="card-title">@proveedor.Name</h5>
+                            <p><strong>📞 Contacto:</strong> @proveedor.Contact</p>
+                            <p><strong>🏗 Servicio:</strong> @proveedor.ServiceType</p>
+                            <p><strong>📍 Dirección:</strong> @proveedor.Address</p>
+                            <p><strong>Estado:</strong> <span class="badge @(proveedor.Status == "Activo" ? "bg-success" : "bg-secondary")">@proveedor.Status</span></p>
                             <button class="btn btn-outline-primary w-100 mt-2" @onclick="() => ViewProveedorDetails(proveedor.Id)">Ver Detalles</button>
                         </div>
                     </div>
@@ -78,19 +78,19 @@
                 <div class="modal-body">
                     <div class="mb-3">
                         <label for="nombre" class="form-label">Nombre del Proveedor</label>
-                        <input type="text" class="form-control" id="nombre" placeholder="Ingrese el nombre" @bind="newProveedor.Nombre">
+                        <input type="text" class="form-control" id="nombre" placeholder="Ingrese el nombre" @bind="newProveedor.Name">
                     </div>
                     <div class="mb-3">
                         <label for="tipoServicio" class="form-label">Tipo de Servicio</label>
-                        <input type="text" class="form-control" id="tipoServicio" placeholder="Ejemplo: Maquinaria, Transporte, Servicios" @bind="newProveedor.TipoServicio">
+                        <input type="text" class="form-control" id="tipoServicio" placeholder="Ejemplo: Maquinaria, Transporte, Servicios" @bind="newProveedor.ServiceType">
                     </div>
                     <div class="mb-3">
                         <label for="contacto" class="form-label">Contacto</label>
-                        <input type="text" class="form-control" id="contacto" placeholder="Teléfono o Email" @bind="newProveedor.Contacto">
+                        <input type="text" class="form-control" id="contacto" placeholder="Teléfono o Email" @bind="newProveedor.Contact">
                     </div>
                     <div class="mb-3">
                         <label for="direccion" class="form-label">Dirección</label>
-                        <input type="text" class="form-control" id="direccion" placeholder="Ingrese la dirección" @bind="newProveedor.Direccion">
+                        <input type="text" class="form-control" id="direccion" placeholder="Ingrese la dirección" @bind="newProveedor.Address">
                     </div>
                 </div>
                 <div class="modal-footer">
@@ -104,9 +104,9 @@
 }
 
 @code {
-    private List<Proveedor> proveedores = new();
+    private List<Supplier> proveedores = new();
     private bool showAddProveedorModal = false;
-    private Proveedor newProveedor = new Proveedor();
+    private Supplier newProveedor = new Supplier();
 
     protected override async Task OnInitializedAsync() => proveedores = await ProveedorService.GetProveedoresAsync();
 
@@ -118,7 +118,7 @@
     private void OpenAddProveedorModal()
     {
         showAddProveedorModal = true;
-        newProveedor = new Proveedor(); // Reseteamos el modelo
+        newProveedor = new Supplier(); // Reseteamos el modelo
     }
 
     private void CloseAddProveedorModal()
@@ -128,10 +128,10 @@
 
     private async Task AddProveedor()
     {
-        if (!string.IsNullOrWhiteSpace(newProveedor.Nombre) &&
-            !string.IsNullOrWhiteSpace(newProveedor.TipoServicio) &&
-            !string.IsNullOrWhiteSpace(newProveedor.Contacto) &&
-            !string.IsNullOrWhiteSpace(newProveedor.Direccion))
+        if (!string.IsNullOrWhiteSpace(newProveedor.Name) &&
+            !string.IsNullOrWhiteSpace(newProveedor.ServiceType) &&
+            !string.IsNullOrWhiteSpace(newProveedor.Contact) &&
+            !string.IsNullOrWhiteSpace(newProveedor.Address))
         {
             await ProveedorService.AddProveedorAsync(newProveedor);
             proveedores = await ProveedorService.GetProveedoresAsync();

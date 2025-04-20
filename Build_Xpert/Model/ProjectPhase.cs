@@ -16,7 +16,6 @@ namespace Build_Xpert.Model
         [ForeignKey("Project")]
         public int ProjectId { get; set; }
 
-        public ICollection<ProjectPhaseTasks> ProjectPhaseTasks { get; set; }
 
         [DataType(DataType.DateTime)]
         public DateTime CreatedAt { get; set; } = DateTime.Now;
@@ -24,5 +23,6 @@ namespace Build_Xpert.Model
 
 
         public virtual Project Project { get; set; }
+        public virtual ICollection<ProjectPhaseTasks> ProjectPhaseTasks { get; set; }
     }
 }

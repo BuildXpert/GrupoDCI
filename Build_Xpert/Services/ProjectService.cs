@@ -97,7 +97,7 @@ namespace Build_Xpert.Services
                 CreatedAt = DateTime.Now
             };
 
-            await _context.Tasks.AddAsync(phaseTasks);
+            await _context.ProjectPhaseTasks.AddAsync(phaseTasks);
             await _context.SaveChangesAsync();
 
         }
@@ -105,7 +105,7 @@ namespace Build_Xpert.Services
 
         public async Task ToggleTaskCompletionAsync(int taskId)
         {
-            var task = await _context.Tasks.FindAsync(taskId);
+            var task = await _context.ProjectPhaseTasks.FindAsync(taskId);
             if (task != null)
             {
                 task.IsCompleted = !task.IsCompleted;
@@ -115,10 +115,10 @@ namespace Build_Xpert.Services
 
         public async Task DeleteTaskAsync(int taskId)
         {
-            var task = await _context.Tasks.FindAsync(taskId);
+            var task = await _context.ProjectPhaseTasks.FindAsync(taskId);
             if (task != null)
             {
-                _context.Tasks.Remove(task);
+                _context.ProjectPhaseTasks.Remove(task);
                 await _context.SaveChangesAsync();
             }
         }
@@ -135,14 +135,14 @@ namespace Build_Xpert.Services
 
         public async Task<ProjectPhaseTasks> GetTaskByIdAsync(int id)
         {
-            return await _context.Tasks
+            return await _context.ProjectPhaseTasks
                 .Include(t => t.ProjectPhase)
                 .FirstOrDefaultAsync(t => t.TaskId == id);
         }
 
         public async Task<List<ProjectPhaseTasks>> GetTasksByProjectIdAndPhaseIdAsync(int phaseId, int projectId)
         {
-            return await _context.Tasks
+            return await _context.ProjectPhaseTasks
                 .Include(t => t.ProjectPhase)                     
                     .ThenInclude(p => p.Project)           
                 .Where(t => t.PhaseId == phaseId && t.ProjectPhase.ProjectId == projectId)
@@ -156,7 +156,7 @@ namespace Build_Xpert.Services
             if (task == null)
                 throw new ArgumentException("La tarea no puede ser nula.");
 
-            var existingTask = await _context.Tasks.FindAsync(task.TaskId);
+            var existingTask = await _context.ProjectPhaseTasks.FindAsync(task.TaskId);
             if (existingTask != null)
             {
                 existingTask.Title = task.Title;

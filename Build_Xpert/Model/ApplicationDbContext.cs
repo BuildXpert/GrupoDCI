@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
+using System.Reflection.Emit;
 
 namespace Build_Xpert.Model
 {
@@ -8,7 +9,7 @@ namespace Build_Xpert.Model
         public ApplicationDbContext(DbContextOptions<ApplicationDbContext> options) : base(options) { }
 
         public DbSet<Project> Projects { get; set; }
-        public DbSet<ProjectPhaseTasks> Tasks { get; set; }
+        public DbSet<ProjectPhaseTasks> ProjectPhaseTasks { get; set; }
         public DbSet<ProjectPhase> ProjectPhases { get; set; }
         public DbSet<Property> Properties { get; set; }
         public DbSet<Supplier> Suppliers { get; set; }
@@ -64,6 +65,11 @@ namespace Build_Xpert.Model
                 .WithMany(p => p.SupplierPayment)
                 .HasForeignKey(p => p.SupplierId)
                 .OnDelete(DeleteBehavior.Cascade);
+
+            builder.Entity<ProjectPhase>()
+                .HasMany(p => p.ProjectPhaseTasks)
+                .WithOne() // o .WithOne(t => t.ProjectPhase) si está definido así
+                .HasForeignKey(t => t.PhaseId);
 
             builder.Entity<ProjectPhaseTasks>()
                 .Property(p => p.Description)

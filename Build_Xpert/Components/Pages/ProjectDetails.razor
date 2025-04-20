@@ -12,6 +12,8 @@
 @inject NavigationManager Navigation
 @inject IJSRuntime JSRuntime
 
+@inject ApplicationDbContext _context;
+
 <!-- Estilos personalizados -->
 <style>
     .profile-header {
@@ -266,13 +268,6 @@
                         </div>
                     }
 
-                    @if (projectPhase.ProjectPhaseTasks == null || projectPhase.ProjectPhaseTasks.Count == 0)
-                    {
-                        <div class="alert alert-info mt-3">
-                            No hay tareas registradas para esta fase aún.
-                        </div>
-                    }
-
                     @if (projectPhase == null)
                     {
                         <div class="alert alert-warning mt-3">
@@ -295,7 +290,7 @@
                                     aria-controls="@($"phase-{phase.PhaseId}")"
                                     aria-selected="@(phase == projectPhases.First() ? "true" : "false")">
                                         @phase.PhaseName
-                                        <span class="badge bg-primary phase-badge">@GetTasksForPhase(phase.PhaseName).Count</span>
+                                        <span class="badge bg-primary phase-badge">@taskCountPerPhase[phase.PhaseId]</span>
                                     </button>
                                 </li>
                             }
@@ -305,8 +300,9 @@
                         <div class="tab-content border border-top-0 p-3" id="phaseTabsContent">
                             @foreach (var phase in projectPhases)
                             {
-                                var phaseTasks = GetTasksForPhase(phase.PhaseName);
-                                var phaseProgress = GetPhaseProgress(phase.PhaseName);
+                                var phaseTasks = async () => await GetTasksForPhase(phase.PhaseId);
+                                var phaseProgress = async() => await GetPhaseProgress(phase.PhaseId);
+
 
                                 <div class="tab-pane fade @(phase == projectPhases.First() ? "show active" : "")"
                                 id="@($"phase-{phase.PhaseId}")"
@@ -315,9 +311,9 @@
 
                                     <!-- Barra de progreso de la fase -->
                                     <div class="mb-3">
-                                        <small class="text-muted">Progreso de la fase: @phaseProgress.ToString("0")%</small>
+                                        <small class="text-muted">Progreso de la fase: @progressPerPhase[phase.PhaseId].ToString("0")%</small>
                                         <div class="progress phase-progress">
-                                            <div class="progress-bar @GetProgressBarClass(phaseProgress)"
+                                            <div class="progress-bar @GetProgressBarClass(progressPerPhase[phase.PhaseId])"
                                             role="progressbar"
                                             style="width: @phaseProgress%;"
                                             aria-valuenow="@phaseProgress"
@@ -326,7 +322,7 @@
                                         </div>
                                     </div>
 
-                                    @if (phaseTasks.Count == 0)
+                                    @if (!tasksPerPhase.ContainsKey(phase.PhaseId) || tasksPerPhase[phase.PhaseId].Count == 0)
                                     {
                                         <p class="text-muted">No hay tareas en esta fase.</p>
                                     }
@@ -338,6 +334,7 @@
                                                     <tr>
                                                         <th>#</th>
                                                         <th>Nombre de la Tarea</th>
+                                                        <th>Descripcion de la Tarea</th>
                                                         <th>Estado</th>
                                                         @if (isAdmin)
                                                         {
@@ -346,12 +343,13 @@
                                                     </tr>
                                                 </thead>
                                                 <tbody>
-                                                    @for (int i = 0; i < phaseTasks.Count; i++)
+                                                    @for (int i = 0; i < tasksPerPhase[phase.PhaseId].Count; i++)
                                                     {
-                                                        var task = phaseTasks[i];
+                                                        var task = tasksPerPhase[phase.PhaseId][i];
                                                         <tr>
                                                             <td>@(i + 1)</td>
                                                             <td>@task.Title</td>
+                                                            <td>@task.Description</td>
                                                             <td>
                                                                 <span class="badge @(task.IsCompleted ? "bg-success" : "bg-warning text-dark")">
                                                                     @(task.IsCompleted ? "Completada" : "Pendiente")
@@ -533,6 +531,17 @@
                                 <div class="mb-3">
                                     <label for="taskDescription" class="form-label">Descripción</label>
                                     <textarea class="form-control" id="taskDescription" placeholder="Ingrese una descripción (opcional)" @bind="newTaskDescription"></textarea>
+                                </div>                                
+                                <div class="mb-3">
+                                    <label for="taskPhase" class="form-label">Seleccione la fase a la que pertece esta tarea</label>
+                                    <InputSelect @bind-Value="selectedPhaseId" class="form-select dropdownOptions" style="margin-bottom:5px">
+                                        @for (int i = 0; i < projectPhases.Count; i++)
+                                        {
+
+                                            <option value="@projectPhases[i].PhaseId">@(i+1)</option>
+
+                                        }     
+                                    </InputSelect>
                                 </div>
                             </div>
                             <div class="modal-footer">
@@ -610,10 +619,12 @@
 
 @code {
     [Parameter] public int Id { get; set; }
+    [Parameter] public EventCallback OnTaskAdded { get; set; }
     private Project project;
     private ApplicationUser client;
     private ApplicationUser admin;
     private string newTaskTitle = "";
+    private ProjectPhaseTasks Tasks = new();
     private bool isAdmin = false;
     private bool showAddTaskModal = false;
     private bool showEditProjectModal = false;
@@ -629,6 +640,14 @@
     private string editTaskDescription = "";
 
     private List<ProjectPhase>? projectPhases;
+    private int phaseCount = 1;
+    private int selectedPhaseId;
+
+    private Dictionary<int, int> taskCountPerPhase = new();
+    private Dictionary<int, double> progressPerPhase = new();
+    private Dictionary<int, List<ProjectPhaseTasks>> tasksPerPhase = new();
+
+
 
     private List<string> houseImages = new()
     {
@@ -663,7 +682,22 @@
         {
             client = await UserService.GetUserByIdAsync(project.ClientId);
             admin = await UserService.GetUserByIdAsync(project.AdminId);
-            projectPhases = project.ProjectPhase?.ToList() ?? new List<ProjectPhase>();
+            projectPhases = await _context.ProjectPhases
+            .Where(p => p.ProjectId == Id)
+            .Include(p => p.ProjectPhaseTasks)
+            .ToListAsync();
+
+            foreach (var phase in projectPhases)
+            {
+                var tasks = await GetTasksForPhase(phase.PhaseId);
+                taskCountPerPhase[phase.PhaseId] = tasks.Count;
+
+                var progress = await GetPhaseProgress(phase.PhaseId);
+                progressPerPhase[phase.PhaseId] = progress;
+
+                var tasksPerph = await GetTasksForPhase(phase.PhaseId);
+                tasksPerPhase[phase.PhaseId] = tasksPerph;
+            }
 
             // foreach (var phase in projectPhases)
             // {
@@ -675,68 +709,67 @@
     }
 
     // Métodos para manejar las fases (sin modificar el modelo de tareas)
-    private List<ProjectPhaseTasks> GetTasksForPhase(string phaseName)
+    private async Task<List<ProjectPhaseTasks>> GetTasksForPhase(int phaseId)
     {
-        // var projectPhases = project.ProjectPhase.ToList();
-
-        // return projectPhases;
+        return await _context.ProjectPhaseTasks.Where(task => task.PhaseId == phaseId).ToListAsync();
 
         // Filtra las tareas según la fase (aquí puedes implementar tu lógica específica)
-        return phaseName switch
-        {
-            "Planificación" => projectPhases?
-            .Where(p => p.PhaseName == phaseName)
-            .SelectMany(p => p.ProjectPhaseTasks)
-            .Where(t => t.Title.Contains("diseño") ||
-                        t.Title.Contains("plan") ||
-                        t.Description.Contains("planificación"))
-            .ToList() ?? new List<ProjectPhaseTasks>(),
+        // return phaseName switch
+        // {
+        //     "Planificación" => projectPhases?
+        //     .Where(p => p.PhaseName == phaseName)
+        //     .SelectMany(p => p.ProjectPhaseTasks)
+        //     .Where(t => t.Title.Contains("diseño") ||
+        //                 t.Title.Contains("plan") ||
+        //                 t.Description.Contains("planificación"))
+        //     .ToList() ?? new List<ProjectPhaseTasks>(),
 
-            "Preparación de obra" => projectPhases?
-                        .Where(p => p.PhaseName == phaseName)
-                        .SelectMany(p => p.ProjectPhaseTasks)
-                        .Where(t => t.Title.Contains("permiso") ||
-                                    t.Title.Contains("preparación") ||
-                                    t.Description.Contains("preparación obra"))
-                        .ToList() ?? new List<ProjectPhaseTasks>(),
+        //     "Preparación de obra" => projectPhases?
+        //                 .Where(p => p.PhaseName == phaseName)
+        //                 .SelectMany(p => p.ProjectPhaseTasks)
+        //                 .Where(t => t.Title.Contains("permiso") ||
+        //                             t.Title.Contains("preparación") ||
+        //                             t.Description.Contains("preparación obra"))
+        //                 .ToList() ?? new List<ProjectPhaseTasks>(),
 
-            "Cimentación y estructura" => projectPhases?
-                        .Where(p => p.PhaseName == phaseName)
-                        .SelectMany(p => p.ProjectPhaseTasks)
-                        .Where(t => t.Title.Contains("cimentación") ||
-                                    t.Title.Contains("estructura") ||
-                                    t.Description.Contains("hormigón") ||
-                                    t.Description.Contains("estructura"))
-                        .ToList() ?? new List<ProjectPhaseTasks>(),
+        //     "Cimentación y estructura" => projectPhases?
+        //                 .Where(p => p.PhaseName == phaseName)
+        //                 .SelectMany(p => p.ProjectPhaseTasks)
+        //                 .Where(t => t.Title.Contains("cimentación") ||
+        //                             t.Title.Contains("estructura") ||
+        //                             t.Description.Contains("hormigón") ||
+        //                             t.Description.Contains("estructura"))
+        //                 .ToList() ?? new List<ProjectPhaseTasks>(),
 
-            "Acabados" => projectPhases?
-                        .Where(p => p.PhaseName == phaseName)
-                        .SelectMany(p => p.ProjectPhaseTasks)
-                        .Where(t => t.Title.Contains("acabado") ||
-                                    t.Title.Contains("pintura") ||
-                                    t.Description.Contains("instalación") ||
-                                    t.Description.Contains("acabados"))
-                        .ToList() ?? new List<ProjectPhaseTasks>(),
+        //     "Acabados" => projectPhases?
+        //                 .Where(p => p.PhaseName == phaseName)
+        //                 .SelectMany(p => p.ProjectPhaseTasks)
+        //                 .Where(t => t.Title.Contains("acabado") ||
+        //                             t.Title.Contains("pintura") ||
+        //                             t.Description.Contains("instalación") ||
+        //                             t.Description.Contains("acabados"))
+        //                 .ToList() ?? new List<ProjectPhaseTasks>(),
 
-            "Inspecciones de calidad" => projectPhases?
-                        .Where(p => p.PhaseName == phaseName)
-                        .SelectMany(p => p.ProjectPhaseTasks)
-                        .Where(t => t.Title.Contains("inspección") ||
-                                    t.Title.Contains("calidad") ||
-                                    t.Description.Contains("revisión") ||
-                                    t.Description.Contains("control calidad"))
-                        .ToList() ?? new List<ProjectPhaseTasks>(),
-            _ => new List<ProjectPhaseTasks>()
-        };
+        //     "Inspecciones de calidad" => projectPhases?
+        //                 .Where(p => p.PhaseName == phaseName)
+        //                 .SelectMany(p => p.ProjectPhaseTasks)
+        //                 .Where(t => t.Title.Contains("inspección") ||
+        //                             t.Title.Contains("calidad") ||
+        //                             t.Description.Contains("revisión") ||
+        //                             t.Description.Contains("control calidad"))
+        //                 .ToList() ?? new List<ProjectPhaseTasks>(),
+        //     _ => new List<ProjectPhaseTasks>()
+        // };
     }
 
-    private double GetPhaseProgress(string phase)
+    private async Task<double> GetPhaseProgress(int phase)
     {
-        var tasks = GetTasksForPhase(phase);
+        var tasks = await GetTasksForPhase(phase);
         if (tasks.Count == 0) return 0;
 
         return (double)tasks.Count(t => t.IsCompleted) / tasks.Count * 100;
     }
+
 
     private string GetProgressBarClass(double progress)
     {
@@ -749,8 +782,7 @@
         };
     }
 
-    // Resto de métodos (se mantienen igual)
-    private int ProgressPercentage => projectPhase.ProjectPhaseTasks == null || projectPhase.ProjectPhaseTasks.Count == 0
+    private int ProgressPercentage => projectPhases == null || projectPhases.Count == 0
         ? 0
         : (int)((double)projectPhases
                     .SelectMany(p => p.ProjectPhaseTasks)
@@ -817,12 +849,15 @@
                 {
                     Title = newTaskTitle,
                     Description = newTaskDescription,
-                    PhaseId = projectPhase.PhaseId
+                    PhaseId = selectedPhaseId,
+                    IsCompleted = false
                 };
 
-            await ProjectService.AddTaskToProjectPhaseAsync(project.Id, projectPhase.PhaseId, projectPhaseTasks.Title, projectPhaseTasks.Description, projectPhaseTasks.IsCompleted);
+            await ProjectService.AddTaskToProjectPhaseAsync(project.Id, newTask.PhaseId, newTask.Title, newTask.Description, newTask.IsCompleted);
             await RefreshProject();
+            ClearTaskForm();
             CloseAddTaskModal();
+            InvokeAsync(StateHasChanged);
         }
     }
 
@@ -841,13 +876,33 @@
     private async Task RefreshProject()
     {
         project = await ProjectService.GetProjectByIdAsync(Id);
-        if (project != null)
+
+        projectPhases = await _context.ProjectPhases
+            .Where(p => p.ProjectId == Id)
+            .Include(p => p.ProjectPhaseTasks)
+            .ToListAsync();
+
+        foreach (var phase in projectPhases)
         {
-            client = await UserService.GetUserByIdAsync(project.ClientId);
-            admin = await UserService.GetUserByIdAsync(project.AdminId);
-            projectPhases = project.ProjectPhase?.ToList() ?? new List<ProjectPhase>();
+            var tasks = await GetTasksForPhase(phase.PhaseId);
+            taskCountPerPhase[phase.PhaseId] = tasks.Count;
+
+            var progress = await GetPhaseProgress(phase.PhaseId);
+            progressPerPhase[phase.PhaseId] = progress;
+
+            tasksPerPhase[phase.PhaseId] = tasks;
         }
+
+        StateHasChanged();
     }
+
+    private void ClearTaskForm()
+    {
+        newTaskTitle = string.Empty;
+        newTaskDescription = string.Empty;
+        selectedPhaseId = 0;
+    }
+
 
     protected async void AddForm(int phaseId)
     {

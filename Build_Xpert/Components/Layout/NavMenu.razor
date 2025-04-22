@@ -1,26 +1,29 @@
 ﻿@implements IDisposable
 @inject AuthenticationStateProvider AuthenticationStateProvider
 @inject NavigationManager NavigationManager
+@using Build_Xpert.Model
+@using Build_Xpert.Services
+@inject IFileManagerService _fileManagerService
 
 <div class="top-row ps-3 navbar navbar-dark">
     <div class="container-fluid">
 
-            <button class="navbar-toggler" type="button" @onclick="ToggleSidebar" style="border: none; background: none;">
-                <span class="navbar-toggler-icon" style="color: white;"></span>
-            </button>
+        <button class="navbar-toggler" type="button" @onclick="ToggleSidebar" style="border: none; background: none;">
+            <span class="navbar-toggler-icon" style="color: white;"></span>
+        </button>
 
 
-            <div class="mx-auto">
-             <a href="/">
+        <div class="mx-auto">
+            <a href="/">
                 <img src="https://i.ibb.co/5xnGs143/image-2025-02-27-154119843-processed.png" alt="Logo Empresa" class="logo-empresa">
             </a>
-            </div>
+        </div>
 
-            <div class="me-3">
+        <div class="me-3">
             <a href="/Account/Manage">
                 <img src="https://www.pngall.com/wp-content/uploads/5/Profile-PNG-File.png" alt="Perfil" class="perfil-icono">
-                </a>
-            </div>
+            </a>
+        </div>
 
 
     </div>
@@ -32,7 +35,7 @@
     <!-- Imagen de Usuario y Bienvenida -->
     <div class="nav-item px-3 text-center">
         <img src="https://www.lavanguardia.com/files/content_image_mobile_filter/uploads/2018/07/25/5fa43c9755611.jpeg"
-             alt="Imagen del Usuario" class="user-image-profile rounded-circle" style="width: 80px; height: 80px; object-fit: cover;" />
+        alt="Imagen del Usuario" class="user-image-profile rounded-circle" style="width: 80px; height: 80px; object-fit: cover;" />
 
         <h6 style="color: white; padding: 15px; font-weight: bold;">
             <i class="bi bi-person-circle"></i> Bienvenido
@@ -150,6 +153,7 @@
     private string? currentUrl;
     private bool isCollapsed = true;
     private string UserName { get; set; } = "Guest";
+    private MediaFile profilePicture;
 
     protected override async Task OnInitializedAsync()
     {
@@ -179,4 +183,8 @@
     {
         isCollapsed = !isCollapsed;
     }
+
+    // private async Task LoadProfilePicture(){
+    //     profilePicture = await _fileManagerService.GetProfilePictureUrlAsync();
+    // }
 }

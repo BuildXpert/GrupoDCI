@@ -1,6 +1,9 @@
+using Azure.Storage.Blobs;
+using Build_Xpert.Business;
 using Build_Xpert.Components;
 using Build_Xpert.Components.Account;
 using Build_Xpert.Model;
+using Build_Xpert.Repository;
 using Build_Xpert.Services;
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Authorization;
@@ -17,6 +20,19 @@ builder.Services.AddScoped<UserService>();
 builder.Services.AddScoped<PropertyService>();
 builder.Services.AddScoped<SupplierService>();
 builder.Services.AddScoped<InventoryService>();
+builder.Services.AddScoped<IFileManagerService, FileManagerService>();
+builder.Services.AddScoped<IFileManagerCore, FileManagerCore>();
+builder.Services.AddScoped<IFileRepository, FileRepository>();
+builder.Services.AddScoped<IFileTypeRepository, FileTypeRepository>();
+builder.Services.AddScoped<IFileUserRepository, FileUserRepository>();
+builder.Services.AddScoped<IFileProjectRepository, FileProjectRepository>();
+builder.Services.AddMemoryCache(); 
+builder.Services.AddSingleton(x =>
+{
+    var config = x.GetRequiredService<IConfiguration>();
+    var connectionString = config["AzureBlobStorage:ConnectionString"];
+    return new BlobServiceClient(connectionString);
+});
 
 builder.Services.AddCascadingAuthenticationState();
 builder.Services.AddScoped<IdentityUserAccessor>();

@@ -255,7 +255,27 @@
 	{
 		var random = new Random();
 		var quantityOfProjects = properties.Count();
-		var projectIndexToDisplay = random.Next(quantityOfProjects)-1;
+		if (quantityOfProjects == 0){
+			headerImages.Add(
+			new MediaFile{
+					PublicUrl = "https://medias.renoassistance.ca/image/upload/ar_16:9,c_crop/v1730239142/renoassistance/residential/articles/2023-12/styles-de-maison/Modern-house-with-pool.jpg",
+					MediaId = Guid.NewGuid().ToString(),
+					IsPrivate = false,
+					ContainerName = "null",
+					Path = "null",
+					FileName = "null",
+					CreatedAt = DateTime.UtcNow,
+					TypeId = "2",
+					FileType = new FileType
+					{
+						Id = "2",
+						Extension = ".jpg",
+						MimeType = "image/jpeg"
+					}
+			});
+			return;
+		}
+		var projectIndexToDisplay = random.Next(quantityOfProjects) - 1;
 		if (projectIndexToDisplay < 0) projectIndexToDisplay = 0;
 		headerImages = properties[projectIndexToDisplay].MediaFiles;
 	}

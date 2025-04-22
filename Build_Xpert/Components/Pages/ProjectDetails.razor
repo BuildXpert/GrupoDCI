@@ -11,922 +11,1042 @@
 @inject AuthenticationStateProvider AuthenticationStateProvider
 @inject NavigationManager Navigation
 @inject IJSRuntime JSRuntime
+@inject IFileManagerService _fileManagerService;
+@inject AuthenticationStateProvider getauthenticationstateasync;
+@using System.Security.Claims;
 
 @inject ApplicationDbContext _context;
 
 <!-- Estilos personalizados -->
 <style>
-    .profile-header {
-    position: relative;
-    width: 100%;
-    height: 300px;
-    background: url("https://images.pexels.com/photos/106399/pexels-photo-106399.jpeg") center center / cover no-repeat;
-    }
+	.profile-header {
+		position: relative;
+		width: 100%;
+		height: 450px;
+		background-size: cover;
+		background-position: center;
+		background-repeat: no-repeat;
+	}
 
-    .profile-header::after {
-    content: "";
-    position: absolute;
-    bottom: 0;
-    left: 0;
-    width: 100%;
-    height: 40%;
-    background: linear-gradient(to bottom, rgba(255, 255, 255, 0) 0%, white 100%);
-    }
+		.profile-header::after {
+			content: "";
+			position: absolute;
+			bottom: 0;
+			left: 0;
+			width: 100%;
+			height: 40%;
+			background: linear-gradient(to bottom, rgba(255, 255, 255, 0) 0%, white 50%);
+		}
 
-    .btn-fixed-size {
-    width: 140px;
-    text-align: center;
-    }
+	.btn-fixed-size {
+		width: 140px;
+		text-align: center;
+	}
 
-    .btn-sm-fixed-size {
-    width: 100px;
-    text-align: center;
-    }
+	.btn-sm-fixed-size {
+		width: 100px;
+		text-align: center;
+	}
 
-    .carousel-item img {
-    height: 400px;
-    object-fit: cover;
-    border-radius: 8px;
-    }
+	.carousel-item img {
+		height: 400px;
+		object-fit: cover;
+		border-radius: 8px;
+	}
 
-    .ficha-tecnica {
-    background-color: #f8f9fa;
-    border-radius: 8px;
-    padding: 20px;
-    height: 100%;
-    }
+	.ficha-tecnica {
+		background-color: #f8f9fa;
+		border-radius: 8px;
+		padding: 20px;
+		height: 100%;
+	}
 
-    /* Estilos para las pestañas */
-    .nav-tabs .nav-link {
-    color: #495057;
-    font-weight: 500;
-    }
+	/* Estilos para las pestañas */
+	.nav-tabs .nav-link {
+		color: #495057;
+		font-weight: 500;
+	}
 
-    .nav-tabs .nav-link.active {
-    font-weight: 600;
-    border-bottom: 3px solid #0d6efd;
-    }
+		.nav-tabs .nav-link.active {
+			font-weight: 600;
+			border-bottom: 3px solid #0d6efd;
+		}
 
-    .tab-content {
-    padding: 20px 0;
-    }
+	.tab-content {
+		padding: 20px 0;
+	}
 
-    /* Estilos para las pestañas de fases */
-    .phase-tabs .nav-link {
-    font-size: 0.9rem;
-    padding: 0.5rem 1rem;
-    }
+	/* Estilos para las pestañas de fases */
+	.phase-tabs .nav-link {
+		font-size: 0.9rem;
+		padding: 0.5rem 1rem;
+	}
 
-    .phase-tabs .nav-link.active {
-    font-weight: 600;
-    border-bottom: 3px solid #0d6efd;
-    background-color: #f8f9fa;
-    }
+		.phase-tabs .nav-link.active {
+			font-weight: 600;
+			border-bottom: 3px solid #0d6efd;
+			background-color: #f8f9fa;
+		}
 
-    .phase-badge {
-    font-size: 0.75rem;
-    margin-left: 5px;
-    }
+	.phase-badge {
+		font-size: 0.75rem;
+		margin-left: 5px;
+	}
 
-    .phase-progress {
-    height: 5px;
-    margin-top: 5px;
-    }
+	.phase-progress {
+		height: 5px;
+		margin-top: 5px;
+	}
 </style>
 
-<!-- Encabezado de la página -->
-<div class="profile-header"></div>
+
+
 
 <!-- Contenedor principal -->
 <div class="container mt-4">
-    <div class="project-container">
-        @if (project == null || client == null || admin == null)
-        {
-            <!-- Estado de carga -->
-            <div class="text-center mt-4">
-                <div class="spinner-border text-primary" role="status">
-                    <span class="visually-hidden">Cargando...</span>
-                </div>
-                <p class="mt-2">Cargando datos del proyecto...</p>
-            </div>
-        }
-        else
-        {
-            <!-- Tarjeta de información del proyecto -->
-            <div class="card shadow-lg p-4 mt-3">
-                <div class="card-body">
-                    <h3 class="card-title">@project.Name</h3>
-                    <p class="card-text">@project.Description</p>
-                    <p><strong>Estado:</strong> <span class="badge bg-info">@project.Status</span></p>
-                    <p><strong>Cliente:</strong> @client.UserName (<a href="mailto:@client.Email">@client.Email</a>)</p>
-                    <p><strong>Administrador:</strong> @admin.UserName (<a href="mailto:@admin.Email">@admin.Email</a>)</p>
+	<div class="project-container">
+		<!-- Encabezado de la página -->
+		@if (projectImages.Count > 0)
+		{
+			<div class="profile-header" style="background-image: url('@projectImages[0].PublicUrl');"></div>
+		}
+		@if (project == null || client == null || admin == null)
+		{
+			<!-- Estado de carga -->
+			<div class="text-center mt-4">
+				<div class="spinner-border text-primary" role="status">
+					<span class="visually-hidden">Cargando...</span>
+				</div>
+				<p class="mt-2">Cargando datos del proyecto...</p>
+			</div>
+		}
+		else
+		{
+			<!-- Tarjeta de información del proyecto -->
+			<div class="card shadow-lg p-4 mt-3">
+				<div class="card-body">
+					<h3 class="card-title">@project.Name</h3>
+					<p class="card-text">@project.Description</p>
+					<p><strong>Estado:</strong> <span class="badge bg-info">@project.Status</span></p>
+					<p><strong>Cliente:</strong> @client.UserName (<a href="mailto:@client.Email">@client.Email</a>)</p>
+					<p><strong>Administrador:</strong> @admin.UserName (<a href="mailto:@admin.Email">@admin.Email</a>)</p>
 
-                    <!-- Barra de progreso general -->
-                    <div class="progress mt-4">
-                        <div class="progress-bar progress-bar-striped progress-bar-animated bg-success"
-                        role="progressbar"
-                        style="width: @ProgressPercentage%;"
-                        aria-valuenow="@ProgressPercentage"
-                        aria-valuemin="0" aria-valuemax="100">
-                            @ProgressPercentage%
-                        </div>
-                    </div>
+					<!-- Barra de progreso general -->
+					<div class="progress mt-4">
+						<div class="progress-bar progress-bar-striped progress-bar-animated bg-success"
+							 role="progressbar"
+							 style="width: @ProgressPercentage%;"
+							 aria-valuenow="@ProgressPercentage"
+							 aria-valuemin="0" aria-valuemax="100">
+							@ProgressPercentage%
+						</div>
+					</div>
 
-                    <!-- Botones de acción -->
-                    <div class="mt-4 d-flex align-items-center">
-                        @if (isAdmin)
-                        {
-                            <button class="btn btn-outline-primary btn-fixed-size" @onclick="OpenEditProjectModal">
-                                Editar Proyecto
-                            </button>
-                        }
-                        <button class="btn btn-outline-secondary btn-fixed-size ms-2" @onclick="GoBack">
-                            Volver
-                        </button>
-                        <a href="/Inventory/@Id" class="btn btn-primary ms-2">Ver Inventario</a>
-                    </div>
-                </div>
-            </div>
+					<!-- Botones de acción -->
+					<div class="mt-4 d-flex align-items-center">
+						@if (isAdmin)
+						{
+							<button class="btn btn-outline-primary btn-fixed-size" @onclick="OpenEditProjectModal">
+								Editar Proyecto
+							</button>
+						}
+						<button class="btn btn-outline-secondary btn-fixed-size ms-2" @onclick="GoBack">
+							Volver
+						</button>
+						<a href="/Inventory/@Id" class="btn btn-primary ms-2">Ver Inventario</a>
+					</div>
+				</div>
+			</div>
 
-            <!-- Pestañas de navegación -->
-            <ul class="nav nav-tabs mt-4" id="projectTabs" role="tablist">
-                <li class="nav-item" role="presentation">
-                    <button class="nav-link active" id="details-tab" data-bs-toggle="tab" data-bs-target="#details" type="button" role="tab" aria-controls="details" aria-selected="true">
-                        Detalles
-                    </button>
-                </li>
-                <li class="nav-item" role="presentation">
-                    <button class="nav-link" id="tasks-tab" data-bs-toggle="tab" data-bs-target="#tasks" type="button" role="tab" aria-controls="tasks" aria-selected="false">
-                        Tareas
-                    </button>
-                </li>
-                <li class="nav-item" role="presentation">
-                    <button class="nav-link" id="files-tab" data-bs-toggle="tab" data-bs-target="#files" type="button" role="tab" aria-controls="files" aria-selected="false">
-                        Archivos
-                    </button>
-                </li>
-                <li class="nav-item" role="presentation">
-                    <button class="nav-link" id="media-tab" data-bs-toggle="tab" data-bs-target="#media" type="button" role="tab" aria-controls="media" aria-selected="false">
-                        Media
-                    </button>
-                </li>
-            </ul>
+			<!-- Pestañas de navegación -->
+			<ul class="nav nav-tabs mt-4" id="projectTabs" role="tablist">
+				<li class="nav-item" role="presentation">
+					<button class="nav-link active" id="details-tab" data-bs-toggle="tab" data-bs-target="#details" type="button" role="tab" aria-controls="details" aria-selected="true">
+						Detalles
+					</button>
+				</li>
+				<li class="nav-item" role="presentation">
+					<button class="nav-link" id="tasks-tab" data-bs-toggle="tab" data-bs-target="#tasks" type="button" role="tab" aria-controls="tasks" aria-selected="false">
+						Tareas
+					</button>
+				</li>
+				<li class="nav-item" role="presentation">
+					<button class="nav-link" id="files-tab" data-bs-toggle="tab" data-bs-target="#files" type="button" role="tab" aria-controls="files" aria-selected="false">
+						Archivos
+					</button>
+				</li>
+				<li class="nav-item" role="presentation">
+					<button class="nav-link" id="media-tab" data-bs-toggle="tab" data-bs-target="#media" type="button" role="tab" aria-controls="media" aria-selected="false">
+						Media
+					</button>
+				</li>
+			</ul>
 
-            <!-- Contenido de las pestañas -->
-            <div class="tab-content" id="projectTabsContent">
-                <!-- Pestaña de Detalles -->
-                <div class="tab-pane fade show active" id="details" role="tabpanel" aria-labelledby="details-tab">
-                    <!-- Sección combinada: Carrusel y Ficha Técnica -->
-                    <div class="card shadow-lg p-4 mt-3">
-                        <div class="row">
-                            <!-- Carrusel de imágenes -->
-                            <div class="col-md-6">
-                                <div id="houseSectionsCarousel" class="carousel slide" data-bs-ride="carousel">
-                                    <div class="carousel-indicators">
-                                        @for (int i = 0; i < houseImages.Count; i++)
-                                        {
-                                            <button type="button" data-bs-target="#houseSectionsCarousel" data-bs-slide-to="@i" class="@(i == 0 ? "active" : "")" aria-label="Slide @(i + 1)"></button>
-                                        }
-                                    </div>
+			<!-- Contenido de las pestañas -->
+			<div class="tab-content" id="projectTabsContent">
+				<!-- Pestaña de Detalles -->
+				<div class="tab-pane fade show active" id="details" role="tabpanel" aria-labelledby="details-tab">
+					<!-- Sección combinada: Carrusel y Ficha Técnica -->
+					<div class="card shadow-lg p-4 mt-3">
+						<div class="row">
+							<!-- Carrusel de imágenes -->
+							<div class="col-md-6">
+								<div id="houseSectionsCarousel" class="carousel slide" data-bs-ride="carousel">
+									<div class="carousel-indicators">
+										@for (int i = 0; i < projectImages.Count; i++)
+										{
+											<button type="button" data-bs-target="#houseSectionsCarousel" data-bs-slide-to="@i" class="@(i == 0 ? "active" : "")" aria-label="Slide @(i + 1)"></button>
+										}
+									</div>
 
-                                    <div class="carousel-inner">
-                                        @for (int i = 0; i < houseImages.Count; i++)
-                                        {
-                                            <div class="carousel-item @(i == 0 ? "active" : "")">
-                                                <img src="@houseImages[i]" class="d-block w-100" alt="Sección de la casa @(i + 1)">
-                                            </div>
-                                        }
-                                    </div>
+									<div class="carousel-inner">
+										@for (int i = 0; i < projectImages.Count; i++)
+										{
+											<div class="carousel-item @(i == 0 ? "active" : "")">
+												<img src="@projectImages[i].PublicUrl" class="d-block w-100" alt="Sección de la casa @(i + 1)">
+											</div>
+										}
+									</div>
 
-                                    <button class="carousel-control-prev" type="button" data-bs-target="#houseSectionsCarousel" data-bs-slide="prev">
-                                        <span class="carousel-control-prev-icon" aria-hidden="true"></span>
-                                        <span class="visually-hidden">Anterior</span>
-                                    </button>
-                                    <button class="carousel-control-next" type="button" data-bs-target="#houseSectionsCarousel" data-bs-slide="next">
-                                        <span class="carousel-control-next-icon" aria-hidden="true"></span>
-                                        <span class="visually-hidden">Siguiente</span>
-                                    </button>
-                                </div>
-                            </div>
+									<button class="carousel-control-prev" type="button" data-bs-target="#houseSectionsCarousel" data-bs-slide="prev">
+										<span class="carousel-control-prev-icon" aria-hidden="true"></span>
+										<span class="visually-hidden">Anterior</span>
+									</button>
+									<button class="carousel-control-next" type="button" data-bs-target="#houseSectionsCarousel" data-bs-slide="next">
+										<span class="carousel-control-next-icon" aria-hidden="true"></span>
+										<span class="visually-hidden">Siguiente</span>
+									</button>
+								</div>
+							</div>
 
-                            <!-- Ficha Técnica -->
-                            <div class="col-md-6">
-                                <div class="ficha-tecnica h-100">
-                                    <h5>Ficha Técnica</h5>
-                                    <table class="table table-striped">
-                                        <tbody>
-                                            <tr>
-                                                <td><strong>🏠 Tipo de Construcción:</strong></td>
-                                                <td>@project.ConstructionType</td>
-                                            </tr>
-                                            <tr>
-                                                <td><strong>📍 Ubicación:</strong></td>
-                                                <td>@($"{project.Province}, {project.Canton}")</td>
-                                            </tr>
-                                            <tr>
-                                                <td><strong>📏 Área Total:</strong></td>
-                                                <td>@(project.LandSize + project.ConstructionSize) m²</td>
-                                            </tr>
-                                            <tr>
-                                                <td><strong>🛏 Habitaciones:</strong></td>
-                                                <td>@project.Bedrooms</td>
-                                            </tr>
-                                            <tr>
-                                                <td><strong>🚿 Baños:</strong></td>
-                                                <td>@project.Bathrooms</td>
-                                            </tr>
-                                            <tr>
-                                                <td><strong>🚗 Garaje:</strong></td>
-                                                <td>@(project.HasGarage ? $"Sí, capacidad para {project.GarageCapacity} vehículos" : "No")</td>
-                                            </tr>
-                                            <tr>
-                                                <td><strong>🏢 Plantas:</strong></td>
-                                                <td>@project.Floors</td>
-                                            </tr>
-                                            <tr>
-                                                <td><strong>💰 Precio:</strong></td>
-                                                <td>@($"{project.Price:C}")</td>
-                                            </tr>
-                                            <tr>
-                                                <td><strong>🏡 ¿En condominio?</strong></td>
-                                                <td>@(project.IsCondominium ? "Sí" : "No")</td>
-                                            </tr>
-                                        </tbody>
-                                    </table>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
+							<!-- Ficha Técnica -->
+							<div class="col-md-6">
+								<div class="ficha-tecnica h-100">
+									<h5>Ficha Técnica</h5>
+									<table class="table table-striped">
+										<tbody>
+											<tr>
+												<td><strong>🏠 Tipo de Construcción:</strong></td>
+												<td>@project.ConstructionType</td>
+											</tr>
+											<tr>
+												<td><strong>📍 Ubicación:</strong></td>
+												<td>@($"{project.Province}, {project.Canton}")</td>
+											</tr>
+											<tr>
+												<td><strong>📏 Área Total:</strong></td>
+												<td>@(project.LandSize + project.ConstructionSize) m²</td>
+											</tr>
+											<tr>
+												<td><strong>🛏 Habitaciones:</strong></td>
+												<td>@project.Bedrooms</td>
+											</tr>
+											<tr>
+												<td><strong>🚿 Baños:</strong></td>
+												<td>@project.Bathrooms</td>
+											</tr>
+											<tr>
+												<td><strong>🚗 Garaje:</strong></td>
+												<td>@(project.HasGarage ? $"Sí, capacidad para {project.GarageCapacity} vehículos" : "No")</td>
+											</tr>
+											<tr>
+												<td><strong>🏢 Plantas:</strong></td>
+												<td>@project.Floors</td>
+											</tr>
+											<tr>
+												<td><strong>💰 Precio:</strong></td>
+												<td>@($"{project.Price:C}")</td>
+											</tr>
+											<tr>
+												<td><strong>🏡 ¿En condominio?</strong></td>
+												<td>@(project.IsCondominium ? "Sí" : "No")</td>
+											</tr>
+										</tbody>
+									</table>
+								</div>
+							</div>
+						</div>
+					</div>
+				</div>
 
-                <!-- Pestaña de Tareas (organizada por fases fijas) -->
-                <div class="tab-pane fade" id="tasks" role="tabpanel" aria-labelledby="tasks-tab">
-                    @if (isAdmin)
-                    {
-                        <div class="mb-3">
-                            <button class="btn btn-success btn-fixed-size mt-2" @onclick="OpenAddTaskModal">Agregar Tarea</button>
-                        </div>
-                    }
+				<!-- Pestaña de Tareas (organizada por fases fijas) -->
+				<div class="tab-pane fade" id="tasks" role="tabpanel" aria-labelledby="tasks-tab">
+					@if (isAdmin)
+					{
+						<div class="mb-3">
+							<button class="btn btn-success btn-fixed-size mt-2" @onclick="OpenAddTaskModal">Agregar Tarea</button>
+						</div>
+					}
 
-                    @if (projectPhase == null)
-                    {
-                        <div class="alert alert-warning mt-3">
-                            No se pudo cargar la fase del proyecto.
-                        </div>
-                    }
-                    else
-                    {
-                        <!-- Pestañas de fases fijas -->
-                        <ul class="nav nav-tabs phase-tabs" id="phaseTabs" role="tablist">
-                            @foreach (var phase in projectPhases)
-                            {
-                                <li class="nav-item" role="presentation">
-                                    <button class="nav-link @(phase == projectPhases.First() ? "active" : "")"
-                                    id="@($"tab-{phase.PhaseId}")"
-                                    data-bs-toggle="tab"
-                                    data-bs-target="@($"#phase-{phase.PhaseId}")"
-                                    type="button"
-                                    role="tab"
-                                    aria-controls="@($"phase-{phase.PhaseId}")"
-                                    aria-selected="@(phase == projectPhases.First() ? "true" : "false")">
-                                        @phase.PhaseName
-                                        <span class="badge bg-primary phase-badge">@taskCountPerPhase[phase.PhaseId]</span>
-                                    </button>
-                                </li>
-                            }
-                        </ul>
+					@if (projectPhase == null)
+					{
+						<div class="alert alert-warning mt-3">
+							No se pudo cargar la fase del proyecto.
+						</div>
+					}
+					else
+					{
+						<!-- Pestañas de fases fijas -->
+						<ul class="nav nav-tabs phase-tabs" id="phaseTabs" role="tablist">
+							@foreach (var phase in projectPhases)
+							{
+								<li class="nav-item" role="presentation">
+									<button class="nav-link @(phase == projectPhases.First() ? "active" : "")"
+											id="@($"tab-{phase.PhaseId}")"
+											data-bs-toggle="tab"
+											data-bs-target="@($"#phase-{phase.PhaseId}")"
+											type="button"
+											role="tab"
+											aria-controls="@($"phase-{phase.PhaseId}")"
+											aria-selected="@(phase == projectPhases.First() ? "true" : "false")">
+										@phase.PhaseName
+										<span class="badge bg-primary phase-badge">@taskCountPerPhase[phase.PhaseId]</span>
+									</button>
+								</li>
+							}
+						</ul>
 
-                        <!-- Contenido de las pestañas de fases -->
-                        <div class="tab-content border border-top-0 p-3" id="phaseTabsContent">
-                            @foreach (var phase in projectPhases)
-                            {
-                                var phaseTasks = async () => await GetTasksForPhase(phase.PhaseId);
-                                var phaseProgress = async() => await GetPhaseProgress(phase.PhaseId);
+						<!-- Contenido de las pestañas de fases -->
+						<div class="tab-content border border-top-0 p-3" id="phaseTabsContent">
+							@foreach (var phase in projectPhases)
+							{
+								var phaseTasks = async () => await GetTasksForPhase(phase.PhaseId);
+								var phaseProgress = async () => await GetPhaseProgress(phase.PhaseId);
 
 
-                                <div class="tab-pane fade @(phase == projectPhases.First() ? "show active" : "")"
-                                id="@($"phase-{phase.PhaseId}")"
-                                role="tabpanel"
-                                aria-labelledby="@($"tab-{phase}")">
+								<div class="tab-pane fade @(phase == projectPhases.First() ? "show active" : "")"
+									 id="@($"phase-{phase.PhaseId}")"
+									 role="tabpanel"
+									 aria-labelledby="@($"tab-{phase}")">
 
-                                    <!-- Barra de progreso de la fase -->
-                                    <div class="mb-3">
-                                        <small class="text-muted">Progreso de la fase: @progressPerPhase[phase.PhaseId].ToString("0")%</small>
-                                        <div class="progress phase-progress">
-                                            <div class="progress-bar @GetProgressBarClass(progressPerPhase[phase.PhaseId])"
-                                            role="progressbar"
-                                            style="width: @phaseProgress%;"
-                                            aria-valuenow="@phaseProgress"
-                                            aria-valuemin="0"
-                                            aria-valuemax="100"></div>
-                                        </div>
-                                    </div>
+									<!-- Barra de progreso de la fase -->
+									<div class="mb-3">
+										<small class="text-muted">Progreso de la fase: @progressPerPhase[phase.PhaseId].ToString("0")%</small>
+										<div class="progress phase-progress">
+											<div class="progress-bar @GetProgressBarClass(progressPerPhase[phase.PhaseId])"
+												 role="progressbar"
+												 style="width: @phaseProgress%;"
+												 aria-valuenow="@phaseProgress"
+												 aria-valuemin="0"
+												 aria-valuemax="100"></div>
+										</div>
+									</div>
 
-                                    @if (!tasksPerPhase.ContainsKey(phase.PhaseId) || tasksPerPhase[phase.PhaseId].Count == 0)
-                                    {
-                                        <p class="text-muted">No hay tareas en esta fase.</p>
-                                    }
-                                    else
-                                    {
-                                        <div class="table-responsive">
-                                            <table class="table table-bordered table-hover">
-                                                <thead class="table-dark">
-                                                    <tr>
-                                                        <th>#</th>
-                                                        <th>Nombre de la Tarea</th>
-                                                        <th>Descripcion de la Tarea</th>
-                                                        <th>Estado</th>
-                                                        @if (isAdmin)
-                                                        {
-                                                            <th class="text-center">Acciones</th>
-                                                        }
-                                                    </tr>
-                                                </thead>
-                                                <tbody>
-                                                    @for (int i = 0; i < tasksPerPhase[phase.PhaseId].Count; i++)
-                                                    {
-                                                        var task = tasksPerPhase[phase.PhaseId][i];
-                                                        <tr>
-                                                            <td>@(i + 1)</td>
-                                                            <td>@task.Title</td>
-                                                            <td>@task.Description</td>
-                                                            <td>
-                                                                <span class="badge @(task.IsCompleted ? "bg-success" : "bg-warning text-dark")">
-                                                                    @(task.IsCompleted ? "Completada" : "Pendiente")
-                                                                </span>
-                                                            </td>
-                                                            @if (isAdmin)
-                                                            {
-                                                                <td class="text-center">
-                                                                    <button class="btn btn-sm btn-outline-info btn-sm-fixed-size" @onclick="() => OpenTaskModal(task)">
-                                                                        Ver Detalles
-                                                                    </button>
-                                                                    <button class="btn btn-sm btn-outline-primary btn-sm-fixed-size" @onclick="() => OpenEditTaskModal(task)">
-                                                                        Editar
-                                                                    </button>
-                                                                    <button class="btn btn-sm @(task.IsCompleted ? "btn-warning" : "btn-success") btn-sm-fixed-size"
-                                                                    @onclick="() => ToggleTaskCompletion(task.TaskId)">
-                                                                        @(task.IsCompleted ? "Reabrir" : "Completar")
-                                                                    </button>
-                                                                    <button class="btn btn-sm btn-outline-danger btn-sm-fixed-size ms-2" @onclick="() => DeleteTask(task.TaskId)">
-                                                                        Eliminar
-                                                                    </button>
-                                                                </td>
-                                                            }
-                                                        </tr>
-                                                    }
-                                                </tbody>
-                                            </table>
-                                        </div>
-                                    }
-                                    <div class="inventoryFormContainer card p-4 mt-3" style="display:block">
-                                        <p class="text-muted" style="margin-top:10px">Utilizo inventario en esta fase?</p>
-                                        <button class="btn btn-primary ms-2" @onclick="@(() => AddForm(phase.PhaseId))" style="margin-bottom:10px">Agregar item</button>
-                                        @if (phaseFormIndexes.ContainsKey(phase.PhaseId))
-                                        {
-                                            foreach (var form in phaseFormIndexes[phase.PhaseId])
-                                            {
-                                                <EditForm Model="form" method="post" class="d-flex gap-2">
-                                                    <p>Item seleccionado: @form.InventoryItemId</p>
-                                                    <InputSelect @bind-Value="form.InventoryItemId" class="form-select dropdownOptions" @attributes="form.SelectedAttributes" style="margin-bottom:5px">
-                                                        <option id="defaultOption" value="">Seleccione el item del inventario</option>
-                                                        @foreach (var item in inventory)
-                                                        {
-                                                            <option value="@item.Id">@item.Name (precio: @item.Price)</option>
-                                                        }
-                                                    </InputSelect>
-                                                    <InputNumber @bind-Value="form.Quantity" style="margin-bottom:5px">Ingrese la cantidad de items utilizados</InputNumber>
-                                                    <button type="submit" class="btn btn-outline-success mt-2 submitBtn" style="margin-bottom:5px" @onclick="async () => await inventoryService.RegisterInventoryUsage(Id,form.InventoryItemId,form.Quantity)">Registrar</button>
-                                                </EditForm>
-                                            }
-                                        }
-                                    </div>
-                                </div>
-                            }
-                        </div>
-                    }
-                </div>
+									@if (!tasksPerPhase.ContainsKey(phase.PhaseId) || tasksPerPhase[phase.PhaseId].Count == 0)
+									{
+										<p class="text-muted">No hay tareas en esta fase.</p>
+									}
+									else
+									{
+										<div class="table-responsive">
+											<table class="table table-bordered table-hover">
+												<thead class="table-dark">
+													<tr>
+														<th>#</th>
+														<th>Nombre de la Tarea</th>
+														<th>Descripcion de la Tarea</th>
+														<th>Estado</th>
+														@if (isAdmin)
+														{
+															<th class="text-center">Acciones</th>
+														}
+													</tr>
+												</thead>
+												<tbody>
+													@for (int i = 0; i < tasksPerPhase[phase.PhaseId].Count; i++)
+													{
+														var task = tasksPerPhase[phase.PhaseId][i];
+														<tr>
+															<td>@(i + 1)</td>
+															<td>@task.Title</td>
+															<td>@task.Description</td>
+															<td>
+																<span class="badge @(task.IsCompleted ? "bg-success" : "bg-warning text-dark")">
+																	@(task.IsCompleted ? "Completada" : "Pendiente")
+																</span>
+															</td>
+															@if (isAdmin)
+															{
+																<td class="text-center">
+																	<button class="btn btn-sm btn-outline-info btn-sm-fixed-size" @onclick="() => OpenTaskModal(task)">
+																		Ver Detalles
+																	</button>
+																	<button class="btn btn-sm btn-outline-primary btn-sm-fixed-size" @onclick="() => OpenEditTaskModal(task)">
+																		Editar
+																	</button>
+																	<button class="btn btn-sm @(task.IsCompleted ? "btn-warning" : "btn-success") btn-sm-fixed-size"
+																			@onclick="() => ToggleTaskCompletion(task.TaskId)">
+																		@(task.IsCompleted ? "Reabrir" : "Completar")
+																	</button>
+																	<button class="btn btn-sm btn-outline-danger btn-sm-fixed-size ms-2" @onclick="() => DeleteTask(task.TaskId)">
+																		Eliminar
+																	</button>
+																</td>
+															}
+														</tr>
+													}
+												</tbody>
+											</table>
+										</div>
+									}
+									<div class="inventoryFormContainer card p-4 mt-3" style="display:block">
+										<p class="text-muted" style="margin-top:10px">Utilizo inventario en esta fase?</p>
+										<button class="btn btn-primary ms-2" @onclick="@(() => AddForm(phase.PhaseId))" style="margin-bottom:10px">Agregar item</button>
+										@if (phaseFormIndexes.ContainsKey(phase.PhaseId))
+										{
+											foreach (var form in phaseFormIndexes[phase.PhaseId])
+											{
+												<EditForm Model="form" method="post" class="d-flex gap-2">
+													<p>Item seleccionado: @form.InventoryItemId</p>
+													<InputSelect @bind-Value="form.InventoryItemId" class="form-select dropdownOptions" @attributes="form.SelectedAttributes" style="margin-bottom:5px">
+														<option id="defaultOption" value="">Seleccione el item del inventario</option>
+														@foreach (var item in inventory)
+														{
+															<option value="@item.Id">@item.Name (precio: @item.Price)</option>
+														}
+													</InputSelect>
+													<InputNumber @bind-Value="form.Quantity" style="margin-bottom:5px">Ingrese la cantidad de items utilizados</InputNumber>
+													<button type="submit" class="btn btn-outline-success mt-2 submitBtn" style="margin-bottom:5px" @onclick="async () => await inventoryService.RegisterInventoryUsage(Id,form.InventoryItemId,form.Quantity)">Registrar</button>
+												</EditForm>
+											}
+										}
+									</div>
+								</div>
+							}
+						</div>
+					}
+				</div>
 
-                <!-- Pestaña de Archivos -->
-                <div class="tab-pane fade" id="files" role="tabpanel" aria-labelledby="files-tab">
-                    <div class="card shadow-lg p-4">
-                        <div class="card-body">
-                            <h5 class="card-title">Subir Archivos</h5>
-                            <input type="file" class="form-control">
-                            <button class="btn btn-outline-success mt-2">Subir Archivo</button>
+				<!-- Pestaña de Archivos -->
+				<div class="tab-pane fade" id="files" role="tabpanel" aria-labelledby="files-tab">
+					<div class="card shadow-lg p-4">
+						<div class="card-body">
+							<!--Form to upload files to the current project-->
+							<h5 class="card-title">Subir Archivos</h5>
+							<EditForm Model="fileUploadModel" OnValidSubmit="HandleFileUpload">
+								<DataAnnotationsValidator />
+								<ValidationSummary />
+								<div class="mb-3">
+									<label for="file" class="form-label">Seleccionar archivo</label>
+									<InputFile id="file" class="form-control" OnChange="@((e) => fileUploadModel.File = e.File)" />
+									<InputCheckbox id="IsPrivate" @bind-Value="fileUploadModel.IsPrivate" />
+									<label for="IsPrivate" class="form-label">¿Hacer público?</label>
+								</div>
+								<button type="submit" class="btn btn-outline-success">Subir Archivo</button>
+							</EditForm>
 
-                            <h6 class="mt-4">📄 Archivos Subidos</h6>
-                            <table class="table table-bordered table-hover text-center">
-                                <thead class="table-dark">
-                                    <tr>
-                                        <th>📄 Nombre</th>
-                                        <th>📅 Fecha</th>
-                                        <th>👤 Usuario</th>
-                                        <th>📁 Extensión</th>
-                                        <th class="text-center">⚙️ Acciones</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    <tr>
-                                        <td>Documento_ejemplo.pdf</td>
-                                        <td>14/03/2025</td>
-                                        <td>Juan Pérez</td>
-                                        <td>PDF</td>
-                                        <td class="text-center">
-                                            <button class="btn btn-sm btn-outline-info" data-bs-toggle="modal" data-bs-target="#modalDetalles">🔍 Ver</button>
-                                            <button class="btn btn-sm btn-outline-danger">🗑️ Eliminar</button>
-                                        </td>
-                                    </tr>
-                                    <!-- Más archivos... -->
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
-                </div>
+							<h6 class="mt-4">📄 Archivos Subidos</h6>
 
-                <!-- Pestaña de Media -->
-                <div class="tab-pane fade" id="media" role="tabpanel" aria-labelledby="media-tab">
-                    <div class="card shadow-lg p-4">
-                        <div class="card-body">
-                            <h5 class="card-title">Subir Media</h5>
-                            <input type="file" class="form-control" accept="image/*, video/*">
-                            <button class="btn btn-outline-success mt-3 btn-fixed-size">Subir Media</button>
+							@if (project.MediaFiles == null || project.MediaFiles.Count == 0)
+							{
+								<p>No hay archivos subidos aún.</p>
+							}
+							else
+							{
+								<table class="table table-bordered table-hover text-center">
+									<thead class="table-dark">
+										<tr>
+											<th>📄 Nombre</th>
+											<th>📅 Fecha</th>
+											<th>📁 Extensión</th>
+											<th class="text-center">⚙️ Acciones</th>
+										</tr>
+									</thead>
+									<tbody>
+										@foreach (var file in projectFiles)
+										{
+											if (file != null)
+											{
+												<tr>
+													<td>@file.FileName</td>
+													<td>@file.CreatedAt.ToShortDateString()</td>
+													<td>@file.FileType.Extension</td>
+													<td class="text-center">
+														<button class="btn btn-sm btn-outline-info" @onclick="() => OpenFileInNewTabAsync(file)">🔍 Ver</button>
+														<button class="btn btn-sm btn-outline-danger" @onclick="() => DeleteMediaFile(file)">🗑️ Eliminar</button>
+													</td>
+												</tr>
+											}
+										}
+									</tbody>
+								</table>
+							}
 
-                            <h6 class="mt-4">📸 Media Subida</h6>
-                            <table class="table table-bordered table-hover text-center">
-                                <thead class="table-dark">
-                                    <tr>
-                                        <th>📂 Nombre del Archivo</th>
-                                        <th>📅 Fecha de Subida</th>
-                                        <th>👤 Subido por</th>
-                                        <th>📁 Extensión</th>
-                                        <th class="text-center">⚙️ Acciones</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    <tr>
-                                        <td>📸 Foto_obra.jpg</td>
-                                        <td>12/03/2025</td>
-                                        <td>Pedro Gómez</td>
-                                        <td>JPG</td>
-                                        <td class="text-center">
-                                            <button class="btn btn-sm btn-outline-info">🔍 Ver</button>
-                                            <button class="btn btn-sm btn-outline-danger">🗑️ Eliminar</button>
-                                        </td>
-                                    </tr>
-                                    <!-- Más media... -->
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
-                </div>
-            </div>
 
-            <!-- Modales (se mantienen igual) -->
-            @if (showEditProjectModal)
-            {
-                <!-- Modal para Editar Proyecto -->
-                <div class="modal fade show d-block" tabindex="-1" role="dialog">
-                    <div class="modal-dialog" role="document">
-                        <div class="modal-content">
-                            <div class="modal-header">
-                                <h5 class="modal-title">Editar Proyecto</h5>
-                                <button type="button" class="btn-close" @onclick="CloseEditProjectModal"></button>
-                            </div>
-                            <div class="modal-body">
-                                <div class="mb-3">
-                                    <label for="editProjectName" class="form-label">Nombre del Proyecto</label>
-                                    <input type="text" class="form-control" id="editProjectName" @bind="editProjectName">
-                                </div>
-                                <div class="mb-3">
-                                    <label for="editProjectDescription" class="form-label">Descripción</label>
-                                    <textarea class="form-control" id="editProjectDescription" @bind="editProjectDescription"></textarea>
-                                </div>
-                            </div>
-                            <div class="modal-footer">
-                                <button class="btn btn-secondary" @onclick="CloseEditProjectModal">Cancelar</button>
-                                <button class="btn btn-primary" @onclick="SaveProjectChanges">Guardar Cambios</button>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                <div class="modal-backdrop fade show"></div>
-            }
+						</div>
+					</div>
+				</div>
 
-            @if (showAddTaskModal)
-            {
-                <!-- Modal para agregar tarea -->
-                <div class="modal fade show d-block" tabindex="-1" role="dialog">
-                    <div class="modal-dialog" role="document">
-                        <div class="modal-content">
-                            <div class="modal-header">
-                                <h5 class="modal-title">Agregar Nueva Tarea</h5>
-                                <button type="button" class="btn-close" @onclick="CloseAddTaskModal"></button>
-                            </div>
-                            <div class="modal-body">
-                                <div class="mb-3">
-                                    <label for="taskTitle" class="form-label">Título de la Tarea</label>
-                                    <input type="text" class="form-control" id="taskTitle" placeholder="Ingrese el título" @bind="newTaskTitle">
-                                </div>
-                                <div class="mb-3">
-                                    <label for="taskDescription" class="form-label">Descripción</label>
-                                    <textarea class="form-control" id="taskDescription" placeholder="Ingrese una descripción (opcional)" @bind="newTaskDescription"></textarea>
-                                </div>                                
-                                <div class="mb-3">
-                                    <label for="taskPhase" class="form-label">Seleccione la fase a la que pertece esta tarea</label>
-                                    <InputSelect @bind-Value="selectedPhaseId" class="form-select dropdownOptions" style="margin-bottom:5px">
-                                        @for (int i = 0; i < projectPhases.Count; i++)
-                                        {
+				<!-- Pestaña de Media -->
+				<div class="tab-pane fade" id="media" role="tabpanel" aria-labelledby="media-tab">
+					<div class="card shadow-lg p-4">
+						<div class="card-body">
+							<h5 class="card-title">Subir Media</h5>
+							<EditForm Model="fileUploadModel" OnValidSubmit="HandleFileUpload">
+								<DataAnnotationsValidator />
+								<ValidationSummary />
+								<div class="mb-3">
+									<label for="file" class="form-label">Seleccionar archivo</label>
+									<InputFile id="file" class="form-control" OnChange="@((e) => fileUploadModel.File = e.File)" />
+									<InputCheckbox id="IsPrivate" @bind-Value="fileUploadModel.IsPrivate" />
+									<label for="IsPrivate" class="form-label">¿Hacer público?</label>
+								</div>
+								<button type="submit" class="btn btn-outline-success">Subir Archivo</button>
+							</EditForm>
 
-                                            <option value="@projectPhases[i].PhaseId">@(i+1)</option>
+							<h6 class="mt-4">📸 Media Subida</h6>
+							<table class="table table-bordered table-hover text-center">
+								<thead class="table-dark">
+									<tr>
+										<th>📂 Nombre del Archivo</th>
+										<th>📅 Fecha de Subida</th>
+										<th>📁 Extensión</th>
+										<th class="text-center">⚙️ Acciones</th>
+									</tr>
+								</thead>
+								<tbody>
+									@foreach (var file in projectImages)
+									{
+										if (file != null)
+										{
+											<tr>
+												<td>@file.FileName</td>
+												<td>@file.CreatedAt.ToShortDateString()</td>
+												<td>@file.FileType.Extension</td>
+												<td class="text-center">
+													<button class="btn btn-sm btn-outline-info" @onclick="() => OpenFileInNewTabAsync(file)">🔍 Ver</button>
+													<button class="btn btn-sm btn-outline-danger" @onclick="() => DeleteMediaFile(file)">🗑️ Eliminar</button>
+												</td>
+											</tr>
+										}
+									}
+								</tbody>
+							</table>
+						</div>
+					</div>
+				</div>
+			</div>
 
-                                        }     
-                                    </InputSelect>
-                                </div>
-                            </div>
-                            <div class="modal-footer">
-                                <button class="btn btn-secondary" @onclick="CloseAddTaskModal">Cancelar</button>
-                                <button class="btn btn-primary" @onclick="AddTask">Guardar</button>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                <div class="modal-backdrop fade show"></div>
-            }
+			<!-- Modales (se mantienen igual) -->
+			@if (showEditProjectModal)
+			{
+				<!-- Modal para Editar Proyecto -->
+				<div class="modal fade show d-block" tabindex="-1" role="dialog">
+					<div class="modal-dialog" role="document">
+						<div class="modal-content">
+							<div class="modal-header">
+								<h5 class="modal-title">Editar Proyecto</h5>
+								<button type="button" class="btn-close" @onclick="CloseEditProjectModal"></button>
+							</div>
+							<div class="modal-body">
+								<div class="mb-3">
+									<label for="editProjectName" class="form-label">Nombre del Proyecto</label>
+									<input type="text" class="form-control" id="editProjectName" @bind="editProjectName">
+								</div>
+								<div class="mb-3">
+									<label for="editProjectDescription" class="form-label">Descripción</label>
+									<textarea class="form-control" id="editProjectDescription" @bind="editProjectDescription"></textarea>
+								</div>
+							</div>
+							<div class="modal-footer">
+								<button class="btn btn-secondary" @onclick="CloseEditProjectModal">Cancelar</button>
+								<button class="btn btn-primary" @onclick="SaveProjectChanges">Guardar Cambios</button>
+							</div>
+						</div>
+					</div>
+				</div>
+				<div class="modal-backdrop fade show"></div>
+			}
 
-            @if (selectedTask != null)
-            {
-                <!-- Modal para detalles de tarea -->
-                <div class="modal fade show d-block" tabindex="-1" role="dialog">
-                    <div class="modal-dialog modal-lg" role="document">
-                        <div class="modal-content">
-                            <div class="modal-header">
-                                <h5 class="modal-title">Detalles de la Tarea</h5>
-                                <button type="button" class="btn-close" @onclick="CloseTaskModal"></button>
-                            </div>
-                            <div class="modal-body">
-                                <p><strong>Nombre:</strong> @selectedTask.Title</p>
-                                <p>
-                                    <strong>Estado:</strong>
-                                    <span class="badge @(selectedTask.IsCompleted ? "bg-success" : "bg-warning text-dark")">
-                                        @(selectedTask.IsCompleted ? "Completada" : "Pendiente")
-                                    </span>
-                                </p>
-                                <p><strong>Fecha de Creación:</strong> @selectedTask.CreatedAt.ToString("dd/MM/yyyy")</p>
-                                <p><strong>Descripción:</strong> @(string.IsNullOrEmpty(selectedTask.Description) ? "Sin descripción" : selectedTask.Description)</p>
-                            </div>
-                            <div class="modal-footer">
-                                <button class="btn btn-secondary" @onclick="CloseTaskModal">Cerrar</button>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                <div class="modal-backdrop fade show"></div>
-            }
+			@if (showAddTaskModal)
+			{
+				<!-- Modal para agregar tarea -->
+				<div class="modal fade show d-block" tabindex="-1" role="dialog">
+					<div class="modal-dialog" role="document">
+						<div class="modal-content">
+							<div class="modal-header">
+								<h5 class="modal-title">Agregar Nueva Tarea</h5>
+								<button type="button" class="btn-close" @onclick="CloseAddTaskModal"></button>
+							</div>
+							<div class="modal-body">
+								<div class="mb-3">
+									<label for="taskTitle" class="form-label">Título de la Tarea</label>
+									<input type="text" class="form-control" id="taskTitle" placeholder="Ingrese el título" @bind="newTaskTitle">
+								</div>
+								<div class="mb-3">
+									<label for="taskDescription" class="form-label">Descripción</label>
+									<textarea class="form-control" id="taskDescription" placeholder="Ingrese una descripción (opcional)" @bind="newTaskDescription"></textarea>
+								</div>
+								<div class="mb-3">
+									<label for="taskPhase" class="form-label">Seleccione la fase a la que pertece esta tarea</label>
+									<InputSelect @bind-Value="selectedPhaseId" class="form-select dropdownOptions" style="margin-bottom:5px">
+										@for (int i = 0; i < projectPhases.Count; i++)
+										{
 
-            @if (showEditTaskModal)
-            {
-                <!-- Modal para editar tarea -->
-                <div class="modal fade show d-block" tabindex="-1" role="dialog">
-                    <div class="modal-dialog" role="document">
-                        <div class="modal-content">
-                            <div class="modal-header">
-                                <h5 class="modal-title">Editar Tarea</h5>
-                                <button type="button" class="btn-close" @onclick="CloseEditTaskModal"></button>
-                            </div>
-                            <div class="modal-body">
-                                <div class="mb-3">
-                                    <label for="editTaskTitle" class="form-label">Título de la Tarea</label>
-                                    <input type="text" class="form-control" id="editTaskTitle" @bind="editTaskTitle">
-                                </div>
-                                <div class="mb-3">
-                                    <label for="editTaskDescription" class="form-label">Descripción</label>
-                                    <textarea class="form-control" id="editTaskDescription" @bind="editTaskDescription"></textarea>
-                                </div>
-                            </div>
-                            <div class="modal-footer">
-                                <button class="btn btn-secondary" @onclick="CloseEditTaskModal">Cancelar</button>
-                                <button class="btn btn-primary" @onclick="SaveTaskChanges">Guardar Cambios</button>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                <div class="modal-backdrop fade show"></div>
-            }
-        }
-    </div>
+											<option value="@projectPhases[i].PhaseId">@(i + 1)</option>
+
+										}
+									</InputSelect>
+								</div>
+							</div>
+							<div class="modal-footer">
+								<button class="btn btn-secondary" @onclick="CloseAddTaskModal">Cancelar</button>
+								<button class="btn btn-primary" @onclick="AddTask">Guardar</button>
+							</div>
+						</div>
+					</div>
+				</div>
+				<div class="modal-backdrop fade show"></div>
+			}
+
+			@if (selectedTask != null)
+			{
+				<!-- Modal para detalles de tarea -->
+				<div class="modal fade show d-block" tabindex="-1" role="dialog">
+					<div class="modal-dialog modal-lg" role="document">
+						<div class="modal-content">
+							<div class="modal-header">
+								<h5 class="modal-title">Detalles de la Tarea</h5>
+								<button type="button" class="btn-close" @onclick="CloseTaskModal"></button>
+							</div>
+							<div class="modal-body">
+								<p><strong>Nombre:</strong> @selectedTask.Title</p>
+								<p>
+									<strong>Estado:</strong>
+									<span class="badge @(selectedTask.IsCompleted ? "bg-success" : "bg-warning text-dark")">
+										@(selectedTask.IsCompleted ? "Completada" : "Pendiente")
+									</span>
+								</p>
+								<p><strong>Fecha de Creación:</strong> @selectedTask.CreatedAt.ToString("dd/MM/yyyy")</p>
+								<p><strong>Descripción:</strong> @(string.IsNullOrEmpty(selectedTask.Description) ? "Sin descripción" : selectedTask.Description)</p>
+							</div>
+							<div class="modal-footer">
+								<button class="btn btn-secondary" @onclick="CloseTaskModal">Cerrar</button>
+							</div>
+						</div>
+					</div>
+				</div>
+				<div class="modal-backdrop fade show"></div>
+			}
+
+			@if (showEditTaskModal)
+			{
+				<!-- Modal para editar tarea -->
+				<div class="modal fade show d-block" tabindex="-1" role="dialog">
+					<div class="modal-dialog" role="document">
+						<div class="modal-content">
+							<div class="modal-header">
+								<h5 class="modal-title">Editar Tarea</h5>
+								<button type="button" class="btn-close" @onclick="CloseEditTaskModal"></button>
+							</div>
+							<div class="modal-body">
+								<div class="mb-3">
+									<label for="editTaskTitle" class="form-label">Título de la Tarea</label>
+									<input type="text" class="form-control" id="editTaskTitle" @bind="editTaskTitle">
+								</div>
+								<div class="mb-3">
+									<label for="editTaskDescription" class="form-label">Descripción</label>
+									<textarea class="form-control" id="editTaskDescription" @bind="editTaskDescription"></textarea>
+								</div>
+							</div>
+							<div class="modal-footer">
+								<button class="btn btn-secondary" @onclick="CloseEditTaskModal">Cancelar</button>
+								<button class="btn btn-primary" @onclick="SaveTaskChanges">Guardar Cambios</button>
+							</div>
+						</div>
+					</div>
+				</div>
+				<div class="modal-backdrop fade show"></div>
+			}
+		}
+	</div>
 </div>
 
 @code {
-    [Parameter] public int Id { get; set; }
-    [Parameter] public EventCallback OnTaskAdded { get; set; }
-    private Project project;
-    private ApplicationUser client;
-    private ApplicationUser admin;
-    private string newTaskTitle = "";
-    private ProjectPhaseTasks Tasks = new();
-    private bool isAdmin = false;
-    private bool showAddTaskModal = false;
-    private bool showEditProjectModal = false;
-    private bool showEditTaskModal = false;
-    private string newTaskDescription = "";
-    private string editProjectName = "";
-    private string editProjectDescription = "";
-    private ProjectPhase projectPhase = new();
-    private ProjectPhaseTasks projectPhaseTasks = new();
-    private ProjectPhaseTasks selectedTask = null;
-    private ProjectPhaseTasks editingTask = new();
-    private string editTaskTitle = "";
-    private string editTaskDescription = "";
+	[Parameter] public int Id { get; set; }
+	[Parameter] public EventCallback OnTaskAdded { get; set; }
+	private Project project;
+	private ApplicationUser client;
+	private ApplicationUser admin;
+	private string newTaskTitle = "";
+	private ProjectPhaseTasks Tasks = new();
+	private bool isAdmin = false;
+	private bool showAddTaskModal = false;
+	private bool showEditProjectModal = false;
+	private bool showEditTaskModal = false;
+	private string newTaskDescription = "";
+	private string editProjectName = "";
+	private string editProjectDescription = "";
+	private ProjectPhase projectPhase = new();
+	private ProjectPhaseTasks projectPhaseTasks = new();
+	private ProjectPhaseTasks selectedTask = null;
+	private ProjectPhaseTasks editingTask = new();
+	private string editTaskTitle = "";
+	private string editTaskDescription = "";
+	private FileUploadModel fileUploadModel = new();
 
-    private List<ProjectPhase>? projectPhases;
-    private int phaseCount = 1;
-    private int selectedPhaseId;
+	private List<MediaFile> projectImages = new();
+	private List<MediaFile> projectFiles = new();
 
-    private Dictionary<int, int> taskCountPerPhase = new();
-    private Dictionary<int, double> progressPerPhase = new();
-    private Dictionary<int, List<ProjectPhaseTasks>> tasksPerPhase = new();
+	private List<ProjectPhase>? projectPhases;
+	private int phaseCount = 1;
+	private int selectedPhaseId;
 
-
-
-    private List<string> houseImages = new()
-    {
-        "https://images.pexels.com/photos/106399/pexels-photo-106399.jpeg",
-        "https://images.pexels.com/photos/259588/pexels-photo-259588.jpeg",
-        "https://images.pexels.com/photos/534151/pexels-photo-534151.jpeg"
-    };
-
-    //To handle the inventory section for tasks use
-    private List<InventoryItem> inventory = new();
-    private Dictionary<int, List<InventoryForm>> phaseFormIndexes = new();
-
-    protected override async Task OnInitializedAsync()
-    {
-
-        var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
-        var user = authState.User;
-
-        if (user.Identity.IsAuthenticated)
-        {
-            var currentUser = await UserManager.GetUserAsync(user);
-            if (currentUser != null)
-            {
-                var roles = await UserManager.GetRolesAsync(currentUser);
-                isAdmin = roles.Contains("Admin");
-            }
-        }
-
-        project = await ProjectService.GetProjectByIdAsync(Id);
-
-        if (project != null)
-        {
-            client = await UserService.GetUserByIdAsync(project.ClientId);
-            admin = await UserService.GetUserByIdAsync(project.AdminId);
-            projectPhases = await _context.ProjectPhases
-            .Where(p => p.ProjectId == Id)
-            .Include(p => p.ProjectPhaseTasks)
-            .ToListAsync();
-
-            foreach (var phase in projectPhases)
-            {
-                var tasks = await GetTasksForPhase(phase.PhaseId);
-                taskCountPerPhase[phase.PhaseId] = tasks.Count;
-
-                var progress = await GetPhaseProgress(phase.PhaseId);
-                progressPerPhase[phase.PhaseId] = progress;
-
-                var tasksPerph = await GetTasksForPhase(phase.PhaseId);
-                tasksPerPhase[phase.PhaseId] = tasksPerph;
-            }
-
-            // foreach (var phase in projectPhases)
-            // {
-            //     phaseFormIndexes[phase.PhaseId] = new List<InventoryForm> { new InventoryForm() };
-            // }
-        }
-
-        inventory = await inventoryService.GetByProjectIdAsync(Id);
-    }
-
-    // Métodos para manejar las fases (sin modificar el modelo de tareas)
-    private async Task<List<ProjectPhaseTasks>> GetTasksForPhase(int phaseId)
-    {
-        return await _context.ProjectPhaseTasks.Where(task => task.PhaseId == phaseId).ToListAsync();
-
-        // Filtra las tareas según la fase (aquí puedes implementar tu lógica específica)
-        // return phaseName switch
-        // {
-        //     "Planificación" => projectPhases?
-        //     .Where(p => p.PhaseName == phaseName)
-        //     .SelectMany(p => p.ProjectPhaseTasks)
-        //     .Where(t => t.Title.Contains("diseño") ||
-        //                 t.Title.Contains("plan") ||
-        //                 t.Description.Contains("planificación"))
-        //     .ToList() ?? new List<ProjectPhaseTasks>(),
-
-        //     "Preparación de obra" => projectPhases?
-        //                 .Where(p => p.PhaseName == phaseName)
-        //                 .SelectMany(p => p.ProjectPhaseTasks)
-        //                 .Where(t => t.Title.Contains("permiso") ||
-        //                             t.Title.Contains("preparación") ||
-        //                             t.Description.Contains("preparación obra"))
-        //                 .ToList() ?? new List<ProjectPhaseTasks>(),
-
-        //     "Cimentación y estructura" => projectPhases?
-        //                 .Where(p => p.PhaseName == phaseName)
-        //                 .SelectMany(p => p.ProjectPhaseTasks)
-        //                 .Where(t => t.Title.Contains("cimentación") ||
-        //                             t.Title.Contains("estructura") ||
-        //                             t.Description.Contains("hormigón") ||
-        //                             t.Description.Contains("estructura"))
-        //                 .ToList() ?? new List<ProjectPhaseTasks>(),
-
-        //     "Acabados" => projectPhases?
-        //                 .Where(p => p.PhaseName == phaseName)
-        //                 .SelectMany(p => p.ProjectPhaseTasks)
-        //                 .Where(t => t.Title.Contains("acabado") ||
-        //                             t.Title.Contains("pintura") ||
-        //                             t.Description.Contains("instalación") ||
-        //                             t.Description.Contains("acabados"))
-        //                 .ToList() ?? new List<ProjectPhaseTasks>(),
-
-        //     "Inspecciones de calidad" => projectPhases?
-        //                 .Where(p => p.PhaseName == phaseName)
-        //                 .SelectMany(p => p.ProjectPhaseTasks)
-        //                 .Where(t => t.Title.Contains("inspección") ||
-        //                             t.Title.Contains("calidad") ||
-        //                             t.Description.Contains("revisión") ||
-        //                             t.Description.Contains("control calidad"))
-        //                 .ToList() ?? new List<ProjectPhaseTasks>(),
-        //     _ => new List<ProjectPhaseTasks>()
-        // };
-    }
-
-    private async Task<double> GetPhaseProgress(int phase)
-    {
-        var tasks = await GetTasksForPhase(phase);
-        if (tasks.Count == 0) return 0;
-
-        return (double)tasks.Count(t => t.IsCompleted) / tasks.Count * 100;
-    }
+	private Dictionary<int, int> taskCountPerPhase = new();
+	private Dictionary<int, double> progressPerPhase = new();
+	private Dictionary<int, List<ProjectPhaseTasks>> tasksPerPhase = new();
 
 
-    private string GetProgressBarClass(double progress)
-    {
-        return progress switch
-        {
-            >= 80 => "bg-success",
-            >= 50 => "bg-info",
-            >= 30 => "bg-warning",
-            _ => "bg-danger"
-        };
-    }
 
-    private int ProgressPercentage => projectPhases == null || projectPhases.Count == 0
-        ? 0
-        : (int)((double)projectPhases
-                    .SelectMany(p => p.ProjectPhaseTasks)
-                    .Count(t => t.IsCompleted)
-                /
-                projectPhases
-                    .SelectMany(p => p.ProjectPhaseTasks)
-                    .Count() * 100);
+	private List<string> houseImages = new()
+	{
+		"https://images.pexels.com/photos/106399/pexels-photo-106399.jpeg",
+		"https://images.pexels.com/photos/259588/pexels-photo-259588.jpeg",
+		"https://images.pexels.com/photos/534151/pexels-photo-534151.jpeg"
+	};
 
-    private void OpenAddTaskModal() => showAddTaskModal = true;
-    private void CloseAddTaskModal() => showAddTaskModal = false;
+	//To handle the inventory section for tasks use
+	private List<InventoryItem> inventory = new();
+	private Dictionary<int, List<InventoryForm>> phaseFormIndexes = new();
 
-    private void OpenEditProjectModal()
-    {
-        editProjectName = project.Name;
-        editProjectDescription = project.Description;
-        showEditProjectModal = true;
-    }
+	protected override async Task OnInitializedAsync()
+	{
 
-    private void CloseEditProjectModal() => showEditProjectModal = false;
+		var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
+		var user = authState.User;
 
-    private async Task SaveProjectChanges()
-    {
-        if (!string.IsNullOrWhiteSpace(editProjectName))
-        {
-            project.Name = editProjectName;
-            project.Description = editProjectDescription;
-            await ProjectService.UpdateProjectAsync(project);
-            await RefreshProject();
-            CloseEditProjectModal();
-        }
-    }
+		if (user.Identity.IsAuthenticated)
+		{
+			var currentUser = await UserManager.GetUserAsync(user);
+			if (currentUser != null)
+			{
+				var roles = await UserManager.GetRolesAsync(currentUser);
+				isAdmin = roles.Contains("Admin");
+			}
+		}
 
-    private void OpenEditTaskModal(ProjectPhaseTasks task)
-    {
-        editingTask = task;
-        editTaskTitle = task.Title;
-        editTaskDescription = task.Description;
-        showEditTaskModal = true;
-    }
+		project = await ProjectService.GetProjectByIdAsync(Id);
 
-    private void CloseEditTaskModal() => showEditTaskModal = false;
+		if (project != null)
+		{
+			client = await UserService.GetUserByIdAsync(project.ClientId);
+			admin = await UserService.GetUserByIdAsync(project.AdminId);
+			projectPhases = await _context.ProjectPhases
+			.Where(p => p.ProjectId == Id)
+			.Include(p => p.ProjectPhaseTasks)
+			.ToListAsync();
 
-    private async Task SaveTaskChanges()
-    {
-        if (!string.IsNullOrWhiteSpace(editTaskTitle))
-        {
-            editingTask.Title = editTaskTitle;
-            editingTask.Description = editTaskDescription;
-            await ProjectService.UpdateTaskAsync(editingTask);
-            await RefreshProject();
-            CloseEditTaskModal();
-        }
-    }
+			foreach (var phase in projectPhases)
+			{
+				var tasks = await GetTasksForPhase(phase.PhaseId);
+				taskCountPerPhase[phase.PhaseId] = tasks.Count;
 
-    private void OpenTaskModal(ProjectPhaseTasks task) => selectedTask = task;
-    private void CloseTaskModal() => selectedTask = null;
+				var progress = await GetPhaseProgress(phase.PhaseId);
+				progressPerPhase[phase.PhaseId] = progress;
 
-    private async Task AddTask()
-    {
-        if (!string.IsNullOrWhiteSpace(newTaskTitle))
-        {
-            var newTask = new ProjectPhaseTasks
-                {
-                    Title = newTaskTitle,
-                    Description = newTaskDescription,
-                    PhaseId = selectedPhaseId,
-                    IsCompleted = false
-                };
+				var tasksPerph = await GetTasksForPhase(phase.PhaseId);
+				tasksPerPhase[phase.PhaseId] = tasksPerph;
+			}
 
-            await ProjectService.AddTaskToProjectPhaseAsync(project.Id, newTask.PhaseId, newTask.Title, newTask.Description, newTask.IsCompleted);
-            await RefreshProject();
-            ClearTaskForm();
-            CloseAddTaskModal();
-            InvokeAsync(StateHasChanged);
-        }
-    }
+			// foreach (var phase in projectPhases)
+			// {
+			//     phaseFormIndexes[phase.PhaseId] = new List<InventoryForm> { new InventoryForm() };
+			// }
 
-    private async Task ToggleTaskCompletion(int taskId)
-    {
-        await ProjectService.ToggleTaskCompletionAsync(taskId);
-        await RefreshProject();
-    }
+			await RefreshProjectMedia();
+		}
 
-    private async Task DeleteTask(int taskId)
-    {
-        await ProjectService.DeleteTaskAsync(taskId);
-        await RefreshProject();
-    }
+		inventory = await inventoryService.GetByProjectIdAsync(Id);
+	}
 
-    private async Task RefreshProject()
-    {
-        project = await ProjectService.GetProjectByIdAsync(Id);
+	// Métodos para manejar las fases (sin modificar el modelo de tareas)
+	private async Task<List<ProjectPhaseTasks>> GetTasksForPhase(int phaseId)
+	{
+		return await _context.ProjectPhaseTasks.Where(task => task.PhaseId == phaseId).ToListAsync();
 
-        projectPhases = await _context.ProjectPhases
-            .Where(p => p.ProjectId == Id)
-            .Include(p => p.ProjectPhaseTasks)
-            .ToListAsync();
+		// Filtra las tareas según la fase (aquí puedes implementar tu lógica específica)
+		// return phaseName switch
+		// {
+		//     "Planificación" => projectPhases?
+		//     .Where(p => p.PhaseName == phaseName)
+		//     .SelectMany(p => p.ProjectPhaseTasks)
+		//     .Where(t => t.Title.Contains("diseño") ||
+		//                 t.Title.Contains("plan") ||
+		//                 t.Description.Contains("planificación"))
+		//     .ToList() ?? new List<ProjectPhaseTasks>(),
 
-        foreach (var phase in projectPhases)
-        {
-            var tasks = await GetTasksForPhase(phase.PhaseId);
-            taskCountPerPhase[phase.PhaseId] = tasks.Count;
+		//     "Preparación de obra" => projectPhases?
+		//                 .Where(p => p.PhaseName == phaseName)
+		//                 .SelectMany(p => p.ProjectPhaseTasks)
+		//                 .Where(t => t.Title.Contains("permiso") ||
+		//                             t.Title.Contains("preparación") ||
+		//                             t.Description.Contains("preparación obra"))
+		//                 .ToList() ?? new List<ProjectPhaseTasks>(),
 
-            var progress = await GetPhaseProgress(phase.PhaseId);
-            progressPerPhase[phase.PhaseId] = progress;
+		//     "Cimentación y estructura" => projectPhases?
+		//                 .Where(p => p.PhaseName == phaseName)
+		//                 .SelectMany(p => p.ProjectPhaseTasks)
+		//                 .Where(t => t.Title.Contains("cimentación") ||
+		//                             t.Title.Contains("estructura") ||
+		//                             t.Description.Contains("hormigón") ||
+		//                             t.Description.Contains("estructura"))
+		//                 .ToList() ?? new List<ProjectPhaseTasks>(),
 
-            tasksPerPhase[phase.PhaseId] = tasks;
-        }
+		//     "Acabados" => projectPhases?
+		//                 .Where(p => p.PhaseName == phaseName)
+		//                 .SelectMany(p => p.ProjectPhaseTasks)
+		//                 .Where(t => t.Title.Contains("acabado") ||
+		//                             t.Title.Contains("pintura") ||
+		//                             t.Description.Contains("instalación") ||
+		//                             t.Description.Contains("acabados"))
+		//                 .ToList() ?? new List<ProjectPhaseTasks>(),
 
-        StateHasChanged();
-    }
+		//     "Inspecciones de calidad" => projectPhases?
+		//                 .Where(p => p.PhaseName == phaseName)
+		//                 .SelectMany(p => p.ProjectPhaseTasks)
+		//                 .Where(t => t.Title.Contains("inspección") ||
+		//                             t.Title.Contains("calidad") ||
+		//                             t.Description.Contains("revisión") ||
+		//                             t.Description.Contains("control calidad"))
+		//                 .ToList() ?? new List<ProjectPhaseTasks>(),
+		//     _ => new List<ProjectPhaseTasks>()
+		// };
+	}
 
-    private void ClearTaskForm()
-    {
-        newTaskTitle = string.Empty;
-        newTaskDescription = string.Empty;
-        selectedPhaseId = 0;
-    }
+	private async Task<double> GetPhaseProgress(int phase)
+	{
+		var tasks = await GetTasksForPhase(phase);
+		if (tasks.Count == 0) return 0;
+
+		return (double)tasks.Count(t => t.IsCompleted) / tasks.Count * 100;
+	}
 
 
-    protected async void AddForm(int phaseId)
-    {
-        var newForm = new InventoryForm
-            {
-                SelectedAttributes = new Dictionary<string, object>
-                {
-                    {"tabindex", "0"}
-                }
-            };
+	private string GetProgressBarClass(double progress)
+	{
+		return progress switch
+		{
+			>= 80 => "bg-success",
+			>= 50 => "bg-info",
+			>= 30 => "bg-warning",
+			_ => "bg-danger"
+		};
+	}
 
-        if (!phaseFormIndexes.ContainsKey(phaseId))
-        {
-            phaseFormIndexes[phaseId] = new List<InventoryForm>();
-        }
+	private int ProgressPercentage => projectPhases == null || projectPhases.Count == 0
+		? 0
+		: (int)((double)projectPhases
+					.SelectMany(p => p.ProjectPhaseTasks)
+					.Count(t => t.IsCompleted)
+				/
+				projectPhases
+					.SelectMany(p => p.ProjectPhaseTasks)
+					.Count() * 100);
 
-        phaseFormIndexes[phaseId].Add(newForm);
-        await InvokeJavaScript();
-    }
+	private void OpenAddTaskModal() => showAddTaskModal = true;
+	private void CloseAddTaskModal() => showAddTaskModal = false;
 
-    private async Task InvokeJavaScript()
-    {
-        await JSRuntime.InvokeVoidAsync("startApp");
-    }
+	private void OpenEditProjectModal()
+	{
+		editProjectName = project.Name;
+		editProjectDescription = project.Description;
+		showEditProjectModal = true;
+	}
 
-    private void GoBack() => Navigation.NavigateTo("/projects");
+	private void CloseEditProjectModal() => showEditProjectModal = false;
+
+	private async Task SaveProjectChanges()
+	{
+		if (!string.IsNullOrWhiteSpace(editProjectName))
+		{
+			project.Name = editProjectName;
+			project.Description = editProjectDescription;
+			await ProjectService.UpdateProjectAsync(project);
+			await RefreshProject();
+			CloseEditProjectModal();
+		}
+	}
+
+	private void OpenEditTaskModal(ProjectPhaseTasks task)
+	{
+		editingTask = task;
+		editTaskTitle = task.Title;
+		editTaskDescription = task.Description;
+		showEditTaskModal = true;
+	}
+
+	private void CloseEditTaskModal() => showEditTaskModal = false;
+
+	private async Task SaveTaskChanges()
+	{
+		if (!string.IsNullOrWhiteSpace(editTaskTitle))
+		{
+			editingTask.Title = editTaskTitle;
+			editingTask.Description = editTaskDescription;
+			await ProjectService.UpdateTaskAsync(editingTask);
+			await RefreshProject();
+			CloseEditTaskModal();
+		}
+	}
+
+	private void OpenTaskModal(ProjectPhaseTasks task) => selectedTask = task;
+	private void CloseTaskModal() => selectedTask = null;
+
+	private async Task AddTask()
+	{
+		if (!string.IsNullOrWhiteSpace(newTaskTitle))
+		{
+			var newTask = new ProjectPhaseTasks
+				{
+					Title = newTaskTitle,
+					Description = newTaskDescription,
+					PhaseId = selectedPhaseId,
+					IsCompleted = false
+				};
+
+			await ProjectService.AddTaskToProjectPhaseAsync(project.Id, newTask.PhaseId, newTask.Title, newTask.Description, newTask.IsCompleted);
+			await RefreshProject();
+			ClearTaskForm();
+			CloseAddTaskModal();
+			InvokeAsync(StateHasChanged);
+		}
+	}
+
+	private async Task ToggleTaskCompletion(int taskId)
+	{
+		await ProjectService.ToggleTaskCompletionAsync(taskId);
+		await RefreshProject();
+	}
+
+	private async Task DeleteTask(int taskId)
+	{
+		await ProjectService.DeleteTaskAsync(taskId);
+		await RefreshProject();
+	}
+
+	private async Task RefreshProject()
+	{
+		project = await ProjectService.GetProjectByIdAsync(Id);
+
+		projectPhases = await _context.ProjectPhases
+			.Where(p => p.ProjectId == Id)
+			.Include(p => p.ProjectPhaseTasks)
+			.ToListAsync();
+
+		foreach (var phase in projectPhases)
+		{
+			var tasks = await GetTasksForPhase(phase.PhaseId);
+			taskCountPerPhase[phase.PhaseId] = tasks.Count;
+
+			var progress = await GetPhaseProgress(phase.PhaseId);
+			progressPerPhase[phase.PhaseId] = progress;
+
+			tasksPerPhase[phase.PhaseId] = tasks;
+		}
+
+		StateHasChanged();
+	}
+
+	private void ClearTaskForm()
+	{
+		newTaskTitle = string.Empty;
+		newTaskDescription = string.Empty;
+		selectedPhaseId = 0;
+	}
+
+
+	protected async void AddForm(int phaseId)
+	{
+		var newForm = new InventoryForm
+			{
+				SelectedAttributes = new Dictionary<string, object>
+				{
+					{"tabindex", "0"}
+				}
+			};
+
+		if (!phaseFormIndexes.ContainsKey(phaseId))
+		{
+			phaseFormIndexes[phaseId] = new List<InventoryForm>();
+		}
+
+		phaseFormIndexes[phaseId].Add(newForm);
+		await InvokeJavaScript();
+	}
+
+	private async Task InvokeJavaScript()
+	{
+		await JSRuntime.InvokeVoidAsync("startApp");
+	}
+
+	private void GoBack() => Navigation.NavigateTo("/projects");
+
+	private void OnFileSelected(InputFileChangeEventArgs e)
+	{
+		fileUploadModel.File = e.File;
+	}
+
+	private async Task HandleFileUpload()
+	{
+		if (fileUploadModel.File == null)
+		{
+			// Optional error handling
+			return;
+		}
+
+		var formFile = await fileUploadModel.File.ToFormFileAsync(); // extension method we talked about
+		fileUploadModel.ProjectId = project.Id.ToString();
+		try
+		{
+			await _fileManagerService.UploadFileForProjectAsync(
+				formFile,
+				fileUploadModel.ProjectId,
+				fileUploadModel.IsPrivate
+			);
+		}
+		catch (Exception ex)
+		{
+			Console.WriteLine("============================================================================\n" +
+									"============================================================================\n" +
+									ex +
+									"\n============================================================================\n" +
+									"============================================================================\n");
+		}
+
+		await RefreshProjectMedia();
+		await RefreshProject();
+	}
+	private async Task OpenFileInNewTabAsync(MediaFile media)
+	{
+		await _fileManagerService.GetMediaUrlAsync(media, TimeSpan.FromMinutes(5));
+		await JSRuntime.InvokeVoidAsync("open", media.PublicUrl, "_blank");
+	}
+
+	private async Task DeleteMediaFile(MediaFile media)
+	{
+		var userId = await GetCurrentUserId();
+		await _fileManagerService.DeleteFileAsync(media.MediaId, userId);
+		await RefreshProjectMedia();
+		await RefreshProject();
+	}
+	private async Task<string> GetCurrentUserId()
+	{
+		var authstate = await getauthenticationstateasync.GetAuthenticationStateAsync();
+		var user = authstate.User;
+		var userId = user.FindFirst(c => c.Type == ClaimTypes.NameIdentifier)?.Value;
+		return userId;
+	}
+
+	private async Task RefreshProjectMedia()
+	{
+		project.MediaFiles = (await _fileManagerService.GetProjectFileUrlsAsync(project, await GetCurrentUserId(), 16)).ToList<MediaFile>();
+		projectImages = project.MediaFiles
+			.Where(t => t != null &&
+						(t.FileType.Extension == ".jpg" || t.FileType.Extension == ".png"))
+			.ToList();
+		projectFiles = project.MediaFiles
+			.Where(t => t != null &&
+						(t.FileType.Extension != ".jpg" && t.FileType.Extension != ".png"))
+			.ToList();
+	}
 } 

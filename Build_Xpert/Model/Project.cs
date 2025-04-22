@@ -68,5 +68,7 @@ namespace Build_Xpert.Model
 
         [Required(ErrorMessage = "Debe especificar si es en condominio.")]
         public bool IsCondominium { get; set; }  // ¿Es en condominio?
+        [NotMapped]
+        public virtual List<MediaFile> MediaFiles { get; set; } = new List<MediaFile>(); // Lista de archivos multimedia asociados al proyecto
     }
 }

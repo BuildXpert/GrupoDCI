@@ -17,6 +17,10 @@ namespace Build_Xpert.Model
         public DbSet<SupplierOrder> SupplierOrders { get; set; }
         public DbSet<InventoryItem> InventoryItems { get; set; }
         public DbSet<InventoryItemUsage> InventoryItemUsage { get; set; }
+        public DbSet<MediaFile> Files { get; set; }
+        public DbSet<FileType> FileTypes { get; set; }
+        public DbSet<FileUser> FilesUsers { get; set; }
+        public DbSet<FileProject> FilesProject { get; set; }
 
 
         protected override void OnModelCreating(ModelBuilder builder)
@@ -75,6 +79,21 @@ namespace Build_Xpert.Model
                 .Property(p => p.Description)
                 .HasMaxLength(500)
                 .HasColumnType("nvarchar(max)"); // Si esperas un texto largo
+
+            // 🔹 Configurar relación entre 'MediaFile' y 'ApplicationUser' a trave de la clase FileUser
+            builder.Entity<FileUser>(entity =>
+            {
+                entity.HasKey(fu => new { fu.UserId, fu.FileId });
+                // Relationship with ApplicationUser
+                entity.HasOne(fu => fu.User)
+                    .WithMany() // or .WithMany(u => u.FileUsers) if you have a collection on ApplicationUser
+                    .HasForeignKey(fu => fu.UserId); // optional: set delete behavior
+
+                // Relationship with MediaFile
+                entity.HasOne(fu => fu.File)
+                    .WithMany() // or .WithMany(f => f.FileUsers) if you have a collection on MediaFile
+                    .HasForeignKey(fu => fu.FileId); // optional
+            });
 
         }
     }

@@ -3,89 +3,145 @@
 @using Build_Xpert.Services
 @inject ProjectService ProjectService
 @inject NavigationManager Navigation
+@inject IFileManagerService _fileManagerService;
+@inject AuthenticationStateProvider getauthenticationstateasync;
+@using System.Security.Claims;
 
 <div class="container mt-4">
-    <h3 class="text-center text-primary">Lista de Proyectos</h3>
-    <p class="text-muted text-center">Explora nuestros proyectos en desarrollo y completados.</p>
+	<h3 class="text-center text-primary">Lista de Proyectos</h3>
+	<p class="text-muted text-center">Explora nuestros proyectos en desarrollo y completados.</p>
 
-    <div class="row mb-4">
-        <div class="col-md-8">
-            <input type="text" class="form-control" placeholder="Buscar por nombre o descripción..." @bind="searchText" />
-        </div>
-        <div class="col-md-2">
-            <button class="btn btn-outline-primary w-100" @onclick="FilterProjects">🔍 Buscar</button>
-        </div>
-        <div class="col-md-2">
-            <button class="btn btn-outline-secondary w-100" @onclick="ClearFilters">❌ Limpiar</button>
-        </div>
-    </div>
+	<div class="row mb-4">
+		<div class="col-md-8">
+			<input type="text" class="form-control" placeholder="Buscar por nombre o descripción..." @bind="searchText" />
+		</div>
+		<div class="col-md-2">
+			<button class="btn btn-outline-primary w-100" @onclick="FilterProjects">🔍 Buscar</button>
+		</div>
+		<div class="col-md-2">
+			<button class="btn btn-outline-secondary w-100" @onclick="ClearFilters">❌ Limpiar</button>
+		</div>
+	</div>
 
-    @if (filteredProjects == null)
-    {
-        <div class="text-center mt-4">
-            <div class="spinner-border text-primary" role="status">
-                <span class="visually-hidden">Cargando...</span>
-            </div>
-            <p class="mt-2">Cargando proyectos...</p>
-        </div>
-    }
-    else if (filteredProjects.Count == 0)
-    {
-        <p class="text-muted text-center mt-3">No se encontraron proyectos con los criterios seleccionados.</p>
-    }
-    else
-    {
-        <div class="row row-cols-1 row-cols-md-3 g-4">
-            @foreach (var project in filteredProjects)
-            {
-                <div class="col">
-                    <div class="card shadow-lg rounded overflow-hidden">
-                        <img src="https://picsum.photos/300/200?random=@project.Id" class="card-img-top" alt="Imagen del proyecto">
+	@if (filteredProjects == null)
+	{
+		<div class="text-center mt-4">
+			<div class="spinner-border text-primary" role="status">
+				<span class="visually-hidden">Cargando...</span>
+			</div>
+			<p class="mt-2">Cargando proyectos...</p>
+		</div>
+	}
+	else if (filteredProjects.Count == 0)
+	{
+		<p class="text-muted text-center mt-3">No se encontraron proyectos con los criterios seleccionados.</p>
+	}
+	else
+	{
+		<div class="row row-cols-1 row-cols-md-3 g-4">
+			@foreach (var project in filteredProjects)
+			{
+				<div class="col">
+					<div class="card shadow-lg rounded overflow-hidden">
+						<!--Carousel to display all the images of a property one by one inside of the corresponding card-->
+						<div id="propertyCarousel+@project.Id" class="carousel slide" data-bs-ride="carousel">
+							<div class="carousel-inner" style="width: 100%; height: 250px;">
+								@for (int i = 0; i < project.MediaFiles.Count; i++)
+								{
+									if (@project.MediaFiles[i] != null)
+									{
 
-                        <div class="card-body">
-                            <h5 class="card-title text-dark">@project.Name</h5>
-                            <p class="card-text text-muted">@project.Description</p>
+										//The next line is a dummy breakpoint to facilitate debugging
+										Console.WriteLine($"Image URL: {project.MediaFiles[i].PublicUrl}");
 
-                            <div class="d-flex justify-content-between mt-3">
-                                <button class="btn btn-outline-primary w-100 me-2" @onclick="() => ViewDetails(project.Id)">Ver Detalles</button>
-                                <button class="btn btn-outline-danger w-100" @onclick="() => DeleteProject(project.Id)">Eliminar</button>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            }
-        </div>
-    }
+
+
+										<div class="carousel-item @(i == 0 ? "active" : "")">
+											<img src="@project.MediaFiles[i].PublicUrl" class="d-block w-100" styles="height:250px; width:413px;" alt="Casa @i">
+										</div>
+									}
+								}
+							</div>
+							<button class="carousel-control-prev" type="button" data-bs-target="#propertyCarousel+@project.Id" data-bs-slide="prev">
+								<span class="carousel-control-prev-icon" aria-hidden="true"></span>
+								<span class="visually-hidden">Anterior</span>
+							</button>
+							<button class="carousel-control-next" type="button" data-bs-target="#propertyCarousel+@project.Id" data-bs-slide="next">
+								<span class="carousel-control-next-icon" aria-hidden="true"></span>
+								<span class="visually-hidden">Siguiente</span>
+							</button>
+						</div>
+						<div class="card-body">
+							<h5 class="card-title text-dark">@project.Name</h5>
+							<p class="card-text text-muted">@project.Description</p>
+
+							<div class="d-flex justify-content-between mt-3">
+								<button class="btn btn-outline-primary w-100 me-2" @onclick="() => ViewDetails(project.Id)">Ver Detalles</button>
+								<button class="btn btn-outline-danger w-100" @onclick="() => DeleteProject(project.Id)">Eliminar</button>
+							</div>
+						</div>
+					</div>
+				</div>
+			}
+		</div>
+	}
 </div>
 
 @code {
-    private List<Project> filteredProjects;
-    private string searchText = "";
+	private List<Project> filteredProjects;
+	private string searchText = "";
 
-    protected override async Task OnInitializedAsync()
-    {
-        await FilterProjects();
-    }
+	protected override async Task OnInitializedAsync()
+	{
+		await FilterProjects();
+		foreach (var project in filteredProjects)
+		{
+			await GetProjectFiles(project);
+			project.MediaFiles = project.MediaFiles
+				.Where(t => t != null &&
+							(t.FileType.Extension == ".jpg" || t.FileType.Extension == ".png"))
+				.ToList();
+		}
+	}
 
-    private async Task DeleteProject(int id)
-    {
-        await ProjectService.DeleteProjectAsync(id);
-        await FilterProjects();
-    }
+	private async Task DeleteProject(int id)
+	{
+		await ProjectService.DeleteProjectAsync(id);
+		await FilterProjects();
+	}
 
-    private void ViewDetails(int id)
-    {
-        Navigation.NavigateTo($"/project-details/{id}");
-    }
+	private void ViewDetails(int id)
+	{
+		Navigation.NavigateTo($"/project-details/{id}");
+	}
 
-    private async Task FilterProjects()
-    {
-        filteredProjects = await ProjectService.GetFilteredProjectsAsync(searchText, "");
-    }
+	private async Task FilterProjects()
+	{
+		filteredProjects = await ProjectService.GetFilteredProjectsAsync(searchText, "");
+	}
 
-    private async Task ClearFilters()
-    {
-        searchText = "";
-        await FilterProjects();
-    }
+	private async Task ClearFilters()
+	{
+		searchText = "";
+		await FilterProjects();
+	}
+
+	private async Task GetProjectFiles(Project property)
+	{
+		var authstate = await getauthenticationstateasync.GetAuthenticationStateAsync();
+		var user = authstate.User;
+		var userId = user.FindFirst(c => c.Type == ClaimTypes.NameIdentifier)?.Value;
+		try
+		{
+			property.MediaFiles = (await _fileManagerService.GetProjectFileUrlsAsync(property, userId, 1)).ToList<MediaFile>();
+		}
+		catch (Exception ex)
+		{
+			Console.WriteLine("============================================================================\n" +
+									"============================================================================\n" +
+									ex +
+									"\n============================================================================\n" +
+									"============================================================================\n");
+		}
+	}
 }
